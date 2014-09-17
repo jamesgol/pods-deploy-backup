@@ -68,7 +68,7 @@ function pods_deploy_load_plugin() {
 	}
 
 	else {
-		include_once( PODS_DEPLOY_DIR . 'class-pods-depoly.php' );
+		include_once( PODS_DEPLOY_DIR . 'class-pods-deploy.php' );
 
 	}
 
