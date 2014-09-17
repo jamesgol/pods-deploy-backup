@@ -3,8 +3,18 @@
 class pods_deploy {
 	private $config_key = 'pods_deploy_config';
 
-	function __construct() {
+	/**
+	 * URL for remote site's API
+	 *
+	 * @since 0.1.0
+	 *
+	 * @var
+	 */
+	private $remote_url;
 
+	function __construct( $remote_url ) {
+
+		$this->remote_url = $remote_url;
 
 	}
 
@@ -548,7 +558,7 @@ class pods_deploy {
 	function base_url( $site = 'local' ) {
 		$urls = array(
 			'local' => json_url( 'pods-api' ),
-			'remote' => 'http://local.wordpress.dev/wp-json/pods-api',
+			'remote' => $this->remote_url,
 		);
 
 		return pods_v( $site, $urls  );
