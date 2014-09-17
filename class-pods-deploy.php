@@ -1,7 +1,4 @@
 <?php
-/*
- Plugin Name: Pods Deploy
- */
 
 class pods_deploy {
 	private $config_key = 'pods_deploy_config';
