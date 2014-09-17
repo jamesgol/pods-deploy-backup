@@ -29,6 +29,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 define( 'PODS_DEPLOY_VERSION', '0.1.0' );
 define( 'PODS_DEPLOY_DIR', plugin_dir_path( __FILE__ ) );
 
+/**
+ * An array of dependencies to check for before loading class.
+ *
+ * @since 0.1.0
+ *
+ * @return array
+ */
 function pods_deploy_dependencies() {
 	return array(
 		'Pods' => 'PODS_VERSION',
@@ -37,6 +44,12 @@ function pods_deploy_dependencies() {
 	);
 }
 
+/**
+ * Check for dependencies and load main class if decencies are present
+ *
+ * @since 0.1.0
+ */
+add_action( 'plugins_loaded', 'pods_deploy_load_plugin' );
 function pods_deploy_load_plugin() {
 	$fail = false;
 	foreach( pods_deploy_dependencies() as $dependency => $constant) {
@@ -58,5 +71,21 @@ function pods_deploy_load_plugin() {
 		include_once( PODS_DEPLOY_DIR . 'class-pods-depoly.php' );
 
 	}
+
+}
+
+/**
+ * Run the deployment
+ *
+ * @TODO Ability to deploy only specific Pods.
+ *
+ * @since 0.1.0
+ *
+ * @param $remote_url
+ */
+function pods_deploy( $remote_url ) {
+	$deploy = new pods_deploy( $remote_url );
+
+	$deploy->deploy();
 
 }

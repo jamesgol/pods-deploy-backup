@@ -8,6 +8,11 @@ class pods_deploy {
 
 	}
 
+	/**
+	 * Run the deployment
+	 *
+	 * @since 0.1.0
+	 */
 	function deploy() {
 		//clear cached data first
 		//@TODO Only do this when testing?
@@ -27,6 +32,15 @@ class pods_deploy {
 
 	}
 
+	/**
+	 * Process the deployment
+	 *
+	 *
+	 * @since 0.1.0
+	 *
+	 * @param array     $config Configuration for deployment.
+	 * @param bool      $new    If is a new deployment or an update
+	 */
 	function do_deploy( $config, $new = true ) {
 
 		if ( is_array( $config ) || is_object( $config ) ) {
@@ -89,6 +103,16 @@ class pods_deploy {
 
 	}
 
+	/**
+	 * Makes request to the REST API
+	 *
+	 * @param string        $url        URL to make request to.
+	 * @param array         $headers    Headers for request. Must include authorization.
+	 * @param string        $method     Optional. Request method, must be 'GET', the default, or 'POST.
+	 * @param bool|array    $data       Optional. Data to be used as body of POST requests.
+	 *
+	 * @return bool|string|WP_Error     Body of response on success or WP_Error on failure.
+	 */
 	function request( $url, $headers, $method = 'GET', $data = false ) {
 
 		//only allow GET/POST requests
@@ -133,6 +157,13 @@ class pods_deploy {
 
 	}
 
+	/**
+	 * Builds our configuration
+	 *
+	 * @since 0.1.0
+	 *
+	 * @return bool|array
+	 */
 	function store_config(  ) {
 		$pods = false;
 
@@ -140,7 +171,7 @@ class pods_deploy {
 			$url = $this->base_url( $site );
 
 			if ( ! is_null( $url ) ) {
-				//@todo
+				//@todo only make request when needed, most of data isn't already in config
 				$data = $this->get_pods( $url, $site );
 
 				$data = json_decode( $data );
@@ -181,6 +212,12 @@ class pods_deploy {
 
 	}
 
+	/**
+	 * Get the config
+	 *
+	 * @since 0.0.3
+	 * @return array|bool|mixed|null|void
+	 */
 	function get_config() {
 		if ( false == ( $config = pods_transient_get( $this->config_key ) ) ){
 
@@ -198,6 +235,16 @@ class pods_deploy {
 
 	}
 
+	/**
+	 * Get fields for a Pod
+	 *
+	 * @param string    $base_url URL for pods-api end point.
+	 * @param string    $pod    Name of Pod to get fields for.
+	 *
+	 * @since 0.1.0
+	 *
+	 * @return array
+	 */
 	function get_fields( $base_url, $pod ) {
 		$url = trailingslashit( $base_url ) . "{$pod}";
 		$data = $this->request( $url, $this->headers() );
@@ -212,6 +259,17 @@ class pods_deploy {
 
 	}
 
+	/**
+	 * Get basic info about all Pods.
+	 *
+	 * @param string    $url        URL for pods-api endpoint.
+	 * @param string    $site       Site to get details for.
+	 * @param bool      $names_only Return only the names.
+	 *
+	 * @since 0.1.0
+	 *
+	 * @return bool
+	 */
 	function get_pods( $url, $site = 'local', $names_only = false ) {
 		$data = $this->request( $url, $this->headers(), 'GET' );
 		if( ! is_wp_error( $data ) ) {
@@ -242,6 +300,13 @@ class pods_deploy {
 
 	}
 
+	/**
+	 * Prepare data for a deployment
+	 *
+	 * @since 0.1.0
+	 *
+	 * @return bool|array
+	 */
 	function prepare_data() {
 		$pods = $this->get_config();
 		$new_id = $deploy = false;
@@ -316,6 +381,8 @@ class pods_deploy {
 
 
 	/**
+	 * Find relationships
+	 *
 	 * @param $config
 	 *
 	 * @return bool|array
@@ -356,7 +423,15 @@ class pods_deploy {
 
 	}
 
-
+	/**
+	 * Build an array of field names and IDs per Pod.
+	 *
+	 * @param string $local_or_remote Optional. To base on local, the default, or remote config.
+	 *
+	 * @since 0.1.0
+	 *
+	 * @return bool
+	 */
 	function fields_by_name_id( $local_or_remote = 'local' ) {
 		$pods = $this->get_config();
 		$fields = false;
@@ -382,6 +457,16 @@ class pods_deploy {
 
 	}
 
+	/**
+	 * Get a field name by ID
+	 *
+	 * @param int       $id                 The field's ID.
+	 * @param string    $local_or_remote    Optional. To base on local, the default, or remote config.
+	 *
+	 * @since 0.1.0
+	 *
+	 * @return array                        Name of Pod and field name.
+	 */
 	function find_by_id( $id, $local_or_remote = 'local' ) {
 		$fields_by_id = $this->fields_by_name_id( $local_or_remote );
 		if ( is_array( $fields_by_id ) ) {
@@ -401,6 +486,17 @@ class pods_deploy {
 
 	}
 
+	/**
+	 * Get a field ID by name.
+	 *
+	 * @param string $name              The field's name
+	 * @param string $local_or_remote   Optional. To base on local, the default, or remote config.
+	 *
+	 *
+	 * @since 0.0.3
+	 *
+	 * @return array                    Name of Pod and field ID
+	 */
 	function find_by_name( $name, $local_or_remote = 'local' ) {
 		$fields_by_name = $this->fields_by_name_id( $local_or_remote );
 
@@ -423,7 +519,15 @@ class pods_deploy {
 	}
 
 
-
+	/**
+	 * Headers for requests
+	 *
+	 * @TODO auth intelligently
+	 *
+	 * @since 0.1.0
+	 *
+	 * @return array
+	 */
 	function headers() {
 		$headers    = array (
 			'Authorization' => 'Basic ' . base64_encode( 'admin' . ':' . 'password' ),
@@ -432,6 +536,15 @@ class pods_deploy {
 		return $headers;
 	}
 
+	/**
+	 * Get base URL for local or remote pods-api end points of REST API
+	 *
+	 * @param string $site Site name, either local, the default, or remote.
+	 *
+	 * @since 0.1.0
+	 *
+	 * @return string
+	 */
 	function base_url( $site = 'local' ) {
 		$urls = array(
 			'local' => json_url( 'pods-api' ),
@@ -442,6 +555,13 @@ class pods_deploy {
 
 	}
 
+	/**
+	 * Site name
+	 *
+	 * @since 0.1.0
+	 *
+	 * @return array
+	 */
 	function sites() {
 
 		return array( 'local', 'remote' );
