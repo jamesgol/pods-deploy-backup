@@ -584,5 +584,74 @@ class pods_deploy {
 
 	}
 
+	/**
+	 * Get URL to make request to.
+	 *
+	 * @param string        $site       Site to request from local|remote
+	 * @param string        $action     Action to take get_pods|add_pod|get_pod|save_pod|delete_pod
+	 * @param bool|string   $pod_name   Name of Pod. Required for get_pod|save_pod|delete_pod not used for get_pods|add_pod|
+	 *
+	 *
+	 * @since 0.1.0
+	 *
+	 * @return string
+	 */
+	function urls( $site, $action, $pod_name = false ) {
+		$url = $this->base_url( $site );
+
+		if ( $action == 'get_pods' ) {
+
+			return trailingslashit( $url ) . "?get_pods";
+
+		}
+		elseif( $action == 'add_pod' ) {
+
+			return trailingslashit( $url ) . "?add_pod";
+
+		}
+		elseif( ! $pod_name ) {
+			new wp_error( 'pods-deploy-need-pod-name-for-url', __( sprintf( 'The action %1s requires that you specify a Pod name.', $action ), 'pods-deploy' ) );
+		}
+		else{
+			if( $action == 'get_pod' ) {
+
+				return trailingslashit( $url ) . "{$pod_name}?get_pod";
+
+			}
+			elseif( $action == 'save_pod' ) {
+
+				return trailingslashit( $url ) . "{$pod_name}?save_pod";
+
+			}
+			elseif( $action == 'delete_pod' ) {
+
+				return trailingslashit( $url ) . "{$pod_name}?delete_pod";
+
+			}
+
+		}
+
+
+	}
+
+	/**
+	 * Takes response from this->request() and decodes JSON to PHP or returns wp_error object if an error occurred in the request.
+	 *
+	 * @param   json|wp_error $response
+	 *
+	 * @since 0.1.0
+	 *
+	 * @return  array|wp_error
+	 */
+	private function conditionally_decode( $response ) {
+
+		if ( ! is_wp_error( $response ) ) {
+			$response = json_decode( $response );
+		}
+
+		return $response;
+		
+	}
+
 } 
 
