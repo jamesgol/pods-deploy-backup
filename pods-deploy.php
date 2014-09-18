@@ -83,7 +83,21 @@ function pods_deploy_load_plugin() {
  *
  * @param $remote_url
  */
-function pods_deploy( $remote_url ) {
+function pods_deploy( $remote_url = false ) {
+
+	if ( ! $remote_url  ) {
+		$remote_url = get_option( 'pods_deploy_remote_url' );
+	}
+
+	if ( ! $remote_url ) {
+		if (  is_admin() ) {
+			//@todo admin nag
+		}
+
+		return;
+
+	}
+
 	$deploy = new pods_deploy( $remote_url );
 
 	$deploy->deploy();
