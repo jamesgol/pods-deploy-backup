@@ -73,8 +73,6 @@ class Pods_Deploy {
 					$config = pods_v( 'remote_config', $pod );
 				}
 
-
-
 				if ( ( is_object ( $fields ) || is_array( $fields ) ) && ( is_object( $config ) || is_array( $config )  )  ) {
 					$data = (array) $config;
 					$data[ 'fields' ] = (object) $fields;
@@ -107,9 +105,7 @@ class Pods_Deploy {
 
 			}
 
-
 		}
-
 
 	}
 
@@ -218,8 +214,6 @@ class Pods_Deploy {
 
 		}
 
-
-
 	}
 
 	/**
@@ -256,6 +250,7 @@ class Pods_Deploy {
 	 * @return array
 	 */
 	public static function get_fields( $base_url, $pod ) {
+
 		$url = trailingslashit( $base_url ) . "{$pod}";
 		$data = self::request( $url, self::headers() );
 		if ( ! is_wp_error( $data ) ) {
@@ -281,6 +276,7 @@ class Pods_Deploy {
 	 * @return bool
 	 */
 	public static function get_pods( $url, $site = 'local', $names_only = false ) {
+
 		$data = self::request( $url, self::headers(), 'GET' );
 		if( ! is_wp_error( $data ) ) {
 			if ( ! $names_only ) {
@@ -318,11 +314,11 @@ class Pods_Deploy {
 	 * @return bool|array
 	 */
 	public static function prepare_data() {
+
 		$pods = self::get_config();
 		$new_id = $deploy = false;
 		if( is_array( $pods ) ) {
 			foreach( $pods as $pod_name => $pod ) {
-
 
 				if ( isset ( $pod[ 'remote_fields' ] ) ) {
 
@@ -341,20 +337,17 @@ class Pods_Deploy {
 					$fields = pods_v( 'remote_fields', $pod );
 					$config = pods_v( 'remote_config', $pod );
 
-
 					$deploy[ $pod_name ] = array(
 						'config' => $config,
 						'fields' => $fields,
 					);
 
-
-
 					//Update our config with the corrected values for remote sister fields.
 					self::save_config( $pods );
 
-
 				}
-				else{
+				else {
+
 					//no remote data yet, so clear IDs/sister IDs so we can create Pods on remote.
 					foreach( $pod[ 'local_fields' ] as $field_name => $data ) {
 						unset( $data->id );
@@ -375,20 +368,12 @@ class Pods_Deploy {
 
 				);
 
-
 			}
 
-
-
 			return $deploy;
-
 		}
 
-
 	}
-
-
-
 
 	/**
 	 * Find relationships
@@ -398,15 +383,20 @@ class Pods_Deploy {
 	 * @return bool|array
 	 */
 	public static function find_relationships( $config ) {
+
 		if ( is_array( $config ) ) {
+
 			foreach( $config as $pod_name => $pod ) {
+
 				$local_fields  = pods_v( 'local_fields', $pod );
 				$relationships = false;
 
 				if ( ! is_null( $local_fields ) ) {
 
 					foreach ( $local_fields as $field_name => $field ) {
+
 						if ( isset( $field->sister_id ) ) {
+
 							$relationships[ pods_v( 'name', $field ) ] = array (
 								'from' => array (
 									'pod'   => $pod_name,
@@ -414,11 +404,8 @@ class Pods_Deploy {
 								),
 								'to'   => self::find_by_id( $field->sister_id ),
 							);
-
 						}
-
 					}
-
 				}
 
 				if ( is_array( $relationships ) ) {
@@ -458,13 +445,9 @@ class Pods_Deploy {
 
 			}
 
-
-
-
 		}
 
 		return $fields;
-
 	}
 
 	/**
