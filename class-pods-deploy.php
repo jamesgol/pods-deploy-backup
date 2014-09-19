@@ -11,14 +11,17 @@ class Pods_Deploy {
 			$headers = $this->headers();
 			foreach( $pod_names as $pod ) {
 				$url = $this->urls( 'local', 'get_pod', $pod );
-				$pod = $this->request( $url, $headers );
+				$data = $this->request( $url, $headers );
 				$url = $this->urls( 'remote', 'add_pod', $pod );
-				$pod = $this->request( $url, $headers );
+				$pod = $this->request( $url, $headers, 'POST', $data );
 			}
+
+			$data = $this->get_relationships();
 			foreach( $pod_names as $pod ) {
 
 				$url = $this->urls( 'remote', 'update_rel', $pod );
-				$pod = $this->request( $url, $headers );
+
+				$pod = $this->request( $url, $headers, 'POST', $data );
 			}
 
 		}
