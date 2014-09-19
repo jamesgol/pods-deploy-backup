@@ -1,6 +1,7 @@
 <?php
 
-class pods_deploy {
+class Pods_Deploy {
+
 	private $config_key = 'pods_deploy_config';
 
 	/**
@@ -10,35 +11,34 @@ class pods_deploy {
 	 *
 	 * @var
 	 */
-	private $remote_url;
-
-	function __construct( $remote_url ) {
-
-		$this->remote_url = $remote_url;
-
-	}
+	private static $remote_url;
 
 	/**
 	 * Run the deployment
 	 *
 	 * @since 0.1.0
+	 *
+	 * @param string $remote_url
 	 */
-	function deploy() {
+	public static function deploy( $remote_url ) {
+
+		self::$remote_url = $remote_url;
+
 		//clear cached data first
 		//@TODO Only do this when testing?
-		$this->clear_cache();
+		self::clear_cache();
 
 		//create Pods on remote
-		$config = $this->prepare_data();
-		$this->do_deploy( $config );
+		$config = self::prepare_data();
+		self::do_deploy( $config );
 
 
 		//recreate config, this time with the info we need for setting relationships
-		$this->clear_cache();
-		$config = $this->prepare_data();
+		self::clear_cache();
+		$config = self::prepare_data();
 
 		//update Pods which sets relationships
-		$this->do_deploy( $this->get_config(), false );
+		self::do_deploy( self::get_config(), false );
 
 	}
 
@@ -51,7 +51,7 @@ class pods_deploy {
 	 * @param array     $config Configuration for deployment.
 	 * @param bool      $new    If is a new deployment or an update
 	 */
-	function do_deploy( $config, $new = true ) {
+	public static function do_deploy( $config, $new = true ) {
 
 		if ( is_array( $config ) || is_object( $config ) ) {
 			$deploy_data = false;
@@ -86,7 +86,7 @@ class pods_deploy {
 
 				//if data checks out deploy
 				if ( is_array( $data ) ) {
-					$url = $this->base_url( 'remote' );
+					$url = self::base_url( 'remote' );
 
 					//add correct endpoint
 					if ( $new ) {
@@ -101,7 +101,7 @@ class pods_deploy {
 					}
 
 					//make the request
-					$this->request( $url, $this->headers(), 'POST', $data );
+					self::request( $url, self::headers(), 'POST', $data );
 
 				}
 
@@ -123,7 +123,7 @@ class pods_deploy {
 	 *
 	 * @return bool|string|WP_Error     Body of response on success or WP_Error on failure.
 	 */
-	function request( $url, $headers, $method = 'GET', $data = false ) {
+	public static function request( $url, $headers, $method = 'GET', $data = false ) {
 
 		//only allow GET/POST requests
 		if ( ! in_array( $method, array( 'GET', 'POST' ) ) ) {
@@ -174,15 +174,15 @@ class pods_deploy {
 	 *
 	 * @return bool|array
 	 */
-	function store_config(  ) {
+	public static function store_config(  ) {
 		$pods = false;
 
-		foreach ( $this->sites() as $site ) {
-			$url = $this->base_url( $site );
+		foreach ( self::sites() as $site ) {
+			$url = self::base_url( $site );
 
 			if ( ! is_null( $url ) ) {
 				//@todo only make request when needed, most of data isn't already in config
-				$data = $this->get_pods( $url, $site );
+				$data = self::get_pods( $url, $site );
 
 				$data = json_decode( $data );
 				if ( is_array( $data ) || is_object( $data ) ) {
@@ -196,7 +196,7 @@ class pods_deploy {
 
 				if ( $pods ) {
 					foreach ( $pods as $name => $data ) {
-						$fields = $this->get_fields( $url, $name );
+						$fields = self::get_fields( $url, $name );
 
 						if ( ! is_null( $fields ) && ( is_object( $fields ) || is_array( $fields ) ) ) {
 							$fields                            = (array) $fields;
@@ -212,7 +212,7 @@ class pods_deploy {
 
 		if ( is_array( $pods ) ) {
 
-			$this->save_config( $pods );
+			self::save_config( $pods );
 
 			return $pods;
 
@@ -228,10 +228,10 @@ class pods_deploy {
 	 * @since 0.0.3
 	 * @return array|bool|mixed|null|void
 	 */
-	function get_config() {
-		if ( false == ( $config = pods_transient_get( $this->config_key ) ) ){
+	public static function get_config() {
+		if ( false == ( $config = pods_transient_get( self::$config_key ) ) ){
 
-			$config = $this->store_config();
+			$config = self::store_config();
 
 		}
 
@@ -239,9 +239,9 @@ class pods_deploy {
 
 	}
 
-	function save_config( $config ) {
+	public static function save_config( $config ) {
 
-		pods_transient_set( $this->config_key, $config );
+		pods_transient_set( self::$config_key, $config );
 
 	}
 
@@ -255,9 +255,9 @@ class pods_deploy {
 	 *
 	 * @return array
 	 */
-	function get_fields( $base_url, $pod ) {
+	public static function get_fields( $base_url, $pod ) {
 		$url = trailingslashit( $base_url ) . "{$pod}";
-		$data = $this->request( $url, $this->headers() );
+		$data = self::request( $url, self::headers() );
 		if ( ! is_wp_error( $data ) ) {
 			$data = json_decode( $data );
 
@@ -280,8 +280,8 @@ class pods_deploy {
 	 *
 	 * @return bool
 	 */
-	function get_pods( $url, $site = 'local', $names_only = false ) {
-		$data = $this->request( $url, $this->headers(), 'GET' );
+	public static function get_pods( $url, $site = 'local', $names_only = false ) {
+		$data = self::request( $url, self::headers(), 'GET' );
 		if( ! is_wp_error( $data ) ) {
 			if ( ! $names_only ) {
 				return $data;
@@ -317,8 +317,8 @@ class pods_deploy {
 	 *
 	 * @return bool|array
 	 */
-	function prepare_data() {
-		$pods = $this->get_config();
+	public static function prepare_data() {
+		$pods = self::get_config();
 		$new_id = $deploy = false;
 		if( is_array( $pods ) ) {
 			foreach( $pods as $pod_name => $pod ) {
@@ -326,7 +326,7 @@ class pods_deploy {
 
 				if ( isset ( $pod[ 'remote_fields' ] ) ) {
 
-					$relationships = $this->find_relationships( $pods );
+					$relationships = self::find_relationships( $pods );
 					foreach ( $pod[ 'remote_fields' ] as $field_name => $data ) {
 						if ( array_key_exists( $field_name, $relationships ) ) {
 							$relationship = $relationships[ $field_name ];
@@ -350,7 +350,7 @@ class pods_deploy {
 
 
 					//Update our config with the corrected values for remote sister fields.
-					$this->save_config( $pods );
+					self::save_config( $pods );
 
 
 				}
@@ -397,7 +397,7 @@ class pods_deploy {
 	 *
 	 * @return bool|array
 	 */
-	function find_relationships( $config ) {
+	public static function find_relationships( $config ) {
 		if ( is_array( $config ) ) {
 			foreach( $config as $pod_name => $pod ) {
 				$local_fields  = pods_v( 'local_fields', $pod );
@@ -412,7 +412,7 @@ class pods_deploy {
 									'pod'   => $pod_name,
 									'field' => pods_v( 'name', $field ),
 								),
-								'to'   => $this->find_by_id( $field->sister_id ),
+								'to'   => self::find_by_id( $field->sister_id ),
 							);
 
 						}
@@ -442,8 +442,8 @@ class pods_deploy {
 	 *
 	 * @return bool
 	 */
-	function fields_by_name_id( $local_or_remote = 'local' ) {
-		$pods = $this->get_config();
+	public static function fields_by_name_id( $local_or_remote = 'local' ) {
+		$pods = self::get_config();
 		$fields = false;
 
 		if ( is_array( $pods ) ) {
@@ -477,8 +477,8 @@ class pods_deploy {
 	 *
 	 * @return array                        Name of Pod and field name.
 	 */
-	function find_by_id( $id, $local_or_remote = 'local' ) {
-		$fields_by_id = $this->fields_by_name_id( $local_or_remote );
+	public static function find_by_id( $id, $local_or_remote = 'local' ) {
+		$fields_by_id = self::fields_by_name_id( $local_or_remote );
 		if ( is_array( $fields_by_id ) ) {
 			foreach( $fields_by_id as $pod_name => $fields ) {
 				$search = array_search( $id, $fields );
@@ -507,8 +507,8 @@ class pods_deploy {
 	 *
 	 * @return array                    Name of Pod and field ID
 	 */
-	function find_by_name( $name, $local_or_remote = 'local' ) {
-		$fields_by_name = $this->fields_by_name_id( $local_or_remote );
+	public static function find_by_name( $name, $local_or_remote = 'local' ) {
+		$fields_by_name = self::fields_by_name_id( $local_or_remote );
 
 		if ( is_array( $fields_by_name ) ) {
 			$fields_by_name = array_flip( $fields_by_name );
@@ -538,9 +538,9 @@ class pods_deploy {
 	 *
 	 * @return array
 	 */
-	function headers() {
+	public static function headers() {
 		$headers    = array (
-			'Authorization' => 'Basic ' . base64_encode( 'admin' . ':' . 'password' ),
+			'Authorization' => 'Basic ' . base64_encode( 'pods-deploy-2' . ':' . 'pods-deploy-2' ),
 		);
 
 		return $headers;
@@ -555,10 +555,10 @@ class pods_deploy {
 	 *
 	 * @return string
 	 */
-	function base_url( $site = 'local' ) {
+	public static function base_url( $site = 'local' ) {
 		$urls = array(
 			'local' => json_url( 'pods-api' ),
-			'remote' => $this->remote_url,
+			'remote' => self::$remote_url,
 		);
 
 		return pods_v( $site, $urls  );
@@ -572,15 +572,15 @@ class pods_deploy {
 	 *
 	 * @return array
 	 */
-	function sites() {
+	public static function sites() {
 
 		return array( 'local', 'remote' );
 
 	}
 
-	function clear_cache() {
+	public static function clear_cache() {
 
-		pods_transient_clear( $this->config_key );
+		pods_transient_clear( self::$config_key );
 
 	}
 
@@ -596,8 +596,8 @@ class pods_deploy {
 	 *
 	 * @return string
 	 */
-	function urls( $site, $action, $pod_name = false ) {
-		$url = $this->base_url( $site );
+	public static function urls( $site, $action, $pod_name = false ) {
+		$url = self::base_url( $site );
 
 		if ( $action == 'get_pods' ) {
 
@@ -630,8 +630,6 @@ class pods_deploy {
 			}
 
 		}
-
-
 	}
 
 	/**
@@ -643,7 +641,7 @@ class pods_deploy {
 	 *
 	 * @return  array|wp_error
 	 */
-	private function conditionally_decode( $response ) {
+	private static function conditionally_decode( $response ) {
 
 		if ( ! is_wp_error( $response ) ) {
 			$response = json_decode( $response );
