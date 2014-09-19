@@ -8,20 +8,20 @@ class Pods_Deploy {
 		$params[ 'names' ] = true;
 		$pod_names = $api->load_pods( $params );
 		if ( is_array( $pod_names ) ) {
-			$headers = $this->headers();
+			$headers = self::headers();
 			foreach( $pod_names as $pod ) {
-				$url = $this->urls( 'local', 'get_pod', $pod );
-				$data = $this->request( $url, $headers );
-				$url = $this->urls( 'remote', 'add_pod', $pod );
-				$pod = $this->request( $url, $headers, 'POST', $data );
+				$url = self::urls( 'local', 'get_pod', $pod );
+				$data = self::request( $url, $headers );
+				$url = self::urls( 'remote', 'add_pod', $pod );
+				$pod = self::request( $url, $headers, 'POST', $data );
 			}
 
-			$data = $this->get_relationships();
+			$data = self::get_relationships();
 			foreach( $pod_names as $pod ) {
 
-				$url = $this->urls( 'remote', 'update_rel', $pod );
+				$url = self::urls( 'remote', 'update_rel', $pod );
 
-				$pod = $this->request( $url, $headers, 'POST', $data );
+				$pod = self::request( $url, $headers, 'POST', $data );
 			}
 
 		}
