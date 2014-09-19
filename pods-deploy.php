@@ -47,11 +47,12 @@ function pods_deploy_tools_menu () {
  */
 function pods_deploy_handler () {
 
-	if ( isset( $_POST[ 'pods-deploy-submit' ] ) ) {
+	if ( pods_v_sanitized( 'pods-deploy-submit', 'post') ) {
 
-		$remote_url = $_POST[ 'remote-url' ];
-		include_once( PODS_DEPLOY_DIR . 'class-pods-deploy.php' );
-		Pods_Deploy::deploy( $remote_url );
+		$remote_url = pods_v_sanitized( 'remote-url', 'post', false, true );
+		if ( $remote_url  ) {
+			pods_deploy( $remote_url );
+		}
 	}
 	else {
 		include 'ui/main.php';
