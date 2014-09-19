@@ -421,6 +421,46 @@ class Pods_Deploy {
 	}
 
 	/**
+	 * Gets relationships
+	 *
+	 * @since 0.2.0
+	 *
+	 * @return bool
+	 */
+	public static function get_relationships(){
+		$relationships = false;
+
+		$api = pods_api();
+		$pods = $api->load_pods();
+
+		foreach( $pods as $pod ) {
+			$pod_name = pods_v( 'name', $pod );
+			if ( ! is_null( $local_fields = pods_v( 'fields', $pod ) ) ) {
+				foreach ( $local_fields as $field_name => $field ) {
+					if ( '' !== ( $sister_id = pods_v( 'sister_id', $field ) ) ) {
+
+						$relationships[ pods_v( 'name', $field ) ] = array (
+							'from' => array (
+								'pod_name'   => $pod_name,
+								'field_name' => pods_v( 'name', $field ),
+							),
+							'to'   => self::find_by_id( $sister_id ),
+						);
+
+					}
+
+				}
+
+
+			}
+
+		}
+
+		return $relationships;
+
+	}
+
+	/**
 	 * Build an array of field names and IDs per Pod.
 	 *
 	 * @param string $local_or_remote Optional. To base on local, the default, or remote config.
