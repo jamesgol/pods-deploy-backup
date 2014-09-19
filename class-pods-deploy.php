@@ -1,19 +1,31 @@
 <?php
 
 class Pods_Deploy {
+	public static $remote_url;
 
+	public static function deploy( $remote_url ) {
+		self::$remote_url = $remote_url;
 
-	function deploy() {
 		$api = pods_api();
 		$params[ 'names' ] = true;
+
 		$pod_names = $api->load_pods( $params );
+
 		if ( is_array( $pod_names ) ) {
+			$pod_names = array_flip( $pod_names );
 			$headers = self::headers();
 			foreach( $pod_names as $pod ) {
 				$url = self::urls( 'local', 'get_pod', $pod );
 				$data = self::request( $url, $headers );
-				$url = self::urls( 'remote', 'add_pod', $pod );
-				$pod = self::request( $url, $headers, 'POST', $data );
+				//$data = $api->load_pods( array( 'name' => $pod ) );
+
+				if ( ! is_wp_error( $data ) ) {
+					$data = self::strip_ids(  json_encode( $data ) );
+					$url = self::urls( 'remote', 'add_pod', $pod );
+					$pod = self::request( $url, $headers, 'POST', $data );
+				} else {
+					pods_error( var_dump( $data ) );
+				}
 			}
 
 			$data = self::get_relationships();
@@ -179,8 +191,9 @@ class Pods_Deploy {
 		$fields = false;
 
 		if ( is_array( $pods ) ) {
-			foreach ( $pods as $pod_name => $pod ) {
+			foreach ( $pods as  $pod ) {
 
+				$pod_name = pods_v( 'name', $pod );
 
 				$local_fields = pods_v( 'fields', $pod );
 				if ( $local_fields ) {
@@ -215,9 +228,10 @@ class Pods_Deploy {
 				$search = array_search( $id, $fields );
 
 				if ( $search ) {
+
 					return array(
-						'pod' => $pod_name,
-						'field' => $search,
+						'pod_name' => $pod_name,
+						'field_name' => $search,
 					);
 				}
 
@@ -248,13 +262,75 @@ class Pods_Deploy {
 
 				if ( $search ) {
 					return array(
-						'pod'   => $pod_name,
-						'field' => $search,
+						'pod_name'   => $pod_name,
+						'field_name' => $search,
 					);
 				}
 
 			}
 
+		}
+
+	}
+
+	public static function strip_ids( $data ) {
+
+		if (  ! empty( $data ) ) {
+			if ( is_array( $data ) ) {
+				$striped_fields = false;
+				$pod = pods_v( key( $data ), $data );
+				$fields = pods_v( 'fields', $pod );
+
+				foreach( $fields as $field_name => $field ) {
+
+					unset( $field[ 'id' ] );
+
+					if ( pods_v( 'sister_id', $field ) ) {
+
+						unset( $field[ 'sister_id' ] );
+
+					}
+
+					$striped_fields[ $field_name ] = $field;
+				}
+
+				if ( is_array( $striped_fields ) ) {
+					$pod[ 'fields' ] = $striped_fields;
+				}
+
+				unset( $pod[ 'id' ] );
+
+			}
+			elseif( is_object( $data ) ) {
+				$pod = $data;
+				$fields = pods_v( 'fields', $pod );
+
+				foreach( $fields as $field_name => $field ) {
+
+					unset( $field->id );
+
+					if ( pods_v( 'sister_id', $field ) ) {
+
+						unset( $field->sister_id );
+
+					}
+
+					$striped_fields[ $field_name ] = (object) $field;
+				}
+
+				if ( is_array( $striped_fields ) ) {
+					$pod->fields = (object) $striped_fields;
+				}
+
+				unset( $pod->id );
+
+			}
+
+		}
+
+
+		if ( isset( $pod ) ) {
+			return $pod;
 		}
 
 	}
@@ -271,7 +347,7 @@ class Pods_Deploy {
 	 */
 	public static function headers() {
 		$headers    = array (
-			'Authorization' => 'Basic ' . base64_encode( 'pods-deploy-2' . ':' . 'pods-deploy-2' ),
+			'Authorization' => 'Basic ' . base64_encode( 'admin' . ':' . 'password' ),
 		);
 
 		return $headers;
@@ -332,7 +408,7 @@ class Pods_Deploy {
 		}
 		elseif( $action == 'add_pod' ) {
 
-			return trailingslashit( $url ) . "?add_pod";
+			return untrailingslashit( $url ) . "?add_pod";
 
 		}
 		elseif( ! $pod_name ) {
@@ -341,7 +417,7 @@ class Pods_Deploy {
 		else{
 			if( $action == 'get_pod' ) {
 
-				return trailingslashit( $url ) . "{$pod_name}?get_pod";
+				return trailingslashit( $url ) . "{$pod_name}";
 
 			}
 			elseif( $action == 'save_pod' ) {
@@ -351,7 +427,7 @@ class Pods_Deploy {
 			}
 			elseif( $action == 'update_rel' ) {
 
-				return trailingslashit( $url ) . "{$pod_name}?update_rel";
+				return trailingslashit( $url ) . "{$pod_name}/update_rel";
 
 			}
 			elseif( $action == 'delete_pod' ) {
