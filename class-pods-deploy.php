@@ -4,131 +4,53 @@ class Pods_Deploy {
 	public static $remote_url;
 
 	public static function deploy( $remote_url ) {
+		$remote_url = trailingslashit( $remote_url ) . 'pods-api/';
 		self::$remote_url = $remote_url;
 
-		$api = pods_api();
-		$params[ 'names' ] = true;
+		$headers = self::headers();
 
-		$pod_names = $api->load_pods( $params );
-
-		if ( is_array( $pod_names ) ) {
-			$pod_names = array_flip( $pod_names );
-			$headers = self::headers();
-			foreach( $pod_names as $pod ) {
-				$url = self::urls( 'local', 'get_pod', $pod );
-				$data = self::request( $url, $headers );
-				//$data = $api->load_pods( array( 'name' => $pod ) );
-
-				if ( ! is_wp_error( $data ) ) {
-					$data = self::strip_ids(  json_encode( $data ) );
-					$url = self::urls( 'remote', 'add_pod', $pod );
-					$pod = self::request( $url, $headers, 'POST', $data );
-				} else {
-					pods_error( var_dump( $data ) );
-				}
-			}
-
-			$data = self::get_relationships();
-			foreach( $pod_names as $pod ) {
-
-				$url = self::urls( 'remote', 'update_rel', $pod );
-
-				$pod = self::request( $url, $headers, 'POST', $data );
-			}
-
+		if ( ! class_exists(  'Pods_Migrate_Packages' ) ) {
+			return new WP_Error( 'pods-deploy-need-packages',  __( 'You must activate the Packages Component on both the site sending and receiving this package.', 'pods-deploy' ) );
 		}
 
-	}
+		//@todo add options for these params
+		$params = array(
+			'pods' => true,
+			'templates' => true,
+			'page' => true,
+			'helpers' => true,
+		);
+		$data = Pods_Migrate_Packages::export( $params );
 
-	/**
-	 * Makes request to the REST API
-	 *
-	 * @param string        $url        URL to make request to.
-	 * @param array         $headers    Headers for request. Must include authorization.
-	 * @param string        $method     Optional. Request method, must be 'GET', the default, or 'POST.
-	 * @param bool|array    $data       Optional. Data to be used as body of POST requests.
-	 *
-	 * @return bool|string|WP_Error     Body of response on success or WP_Error on failure.
-	 */
-	public static function request( $url, $headers, $method = 'GET', $data = false ) {
-
-		//only allow GET/POST requests
-		if ( ! in_array( $method, array( 'GET', 'POST' ) ) ) {
-			$error = new WP_Error( 'pods-deploy-bad-method' , __( 'Pods Deploy request only works with POST & GET requests', 'domain' ) );
-			return $error;
-		}
-
-		//prepare args for request
-		$request_args = array (
-			'method' 	=> $method,
-			'headers' 	=> $headers,
+		$url = $remote_url . 'package';
+		$response = wp_remote_post( $url, array (
+				'method' => 'POST',
+				'headers'     => $headers,
+				'body' => $data,
+			)
 		);
 
-		//add data for POST request
-		if ( $method == 'POST' ) {
-			if ( $data ) {
-				$request_args[ 'body' ] = json_encode( $data );
+		//@TODO check && 201 == wp_remote_retrieve_response_code( $response )
+		if ( ! is_wp_error( $response ) ) {
+			$responses = array();
+			$api = pods_api();
+			$params[ 'names' ] = true;
+			$pod_names = $api->load_pods( $params );
+			$data = Pods_Deploy::get_relationships();
+			foreach( $pod_names as $pod_name ) {
+				$url = $remote_url. "{$pod_name}/update_rel";
+				$responses[] = wp_remote_post( $url, array (
+						'method'      => 'POST',
+						'headers'     => $headers,
+						'body'        => json_encode( $data ),
+					)
+				);
+
 			}
-			else{
-				$error = new WP_Error( 'pods-deploy-post-needs-data' , __( 'Pods Deploy needs data for a POST request', 'domain' ) );
-				return $error;
-			}
-		}
 
-		//make request
-		$response = wp_remote_post( $url, $request_args );
-
-		//make sure response isn't an error
-		if ( ! is_wp_error( $response )  ) {
-			echo "SUCCESS on  {$method} to {$url} \n";
-			$data = wp_remote_retrieve_body( $response  );
-			return $data;
-		}
-		else{
-			echo "FAIL on {$method} to {$url} ";
-			$error = new WP_Error( 'pods-deploy-bad-request' , __( 'Pods Deploy Bad Request', 'domain' ) );
-			$error->add_data( $response );
-
-			return $error;
-		}
-
-	}
-
-
-	/**
-	 * Get basic info about all Pods.
-	 *
-	 * @param string    $url        URL for pods-api endpoint.
-	 * @param string    $site       Site to get details for.
-	 * @param bool      $names_only Return only the names.
-	 *
-	 * @since 0.1.0
-	 *
-	 * @return bool
-	 */
-	public static function get_pods( $url, $site = 'local', $names_only = false ) {
-
-		$data = self::request( $url, self::headers(), 'GET' );
-		if( ! is_wp_error( $data ) ) {
-			if ( ! $names_only ) {
-				return $data;
-			}
-			else {
-				$pods = false;
-				$data = json_decode( $data  );
-				if ( is_array( $data ) ) {
-					foreach( $data as $pod ) {
-						$pods[ $pod->name ] = array(
-							"{$site}_id" => $pod->id,
-							"{$site}_config" => $pod,
-						);
-					}
-				}
-
-				if ( is_array( $pods ) ) {
-
-					return $pods;
-
+			if ( empty( $responses ) ) {
+				foreach( $responses as $response ) {
+					echo wp_remote_retrieve_body( $response );
 				}
 
 			}
@@ -273,69 +195,6 @@ class Pods_Deploy {
 
 	}
 
-	public static function strip_ids( $data ) {
-
-		if (  ! empty( $data ) ) {
-			if ( is_array( $data ) ) {
-				$striped_fields = false;
-				$pod = pods_v( key( $data ), $data );
-				$fields = pods_v( 'fields', $pod );
-
-				foreach( $fields as $field_name => $field ) {
-
-					unset( $field[ 'id' ] );
-
-					if ( pods_v( 'sister_id', $field ) ) {
-
-						unset( $field[ 'sister_id' ] );
-
-					}
-
-					$striped_fields[ $field_name ] = $field;
-				}
-
-				if ( is_array( $striped_fields ) ) {
-					$pod[ 'fields' ] = $striped_fields;
-				}
-
-				unset( $pod[ 'id' ] );
-
-			}
-			elseif( is_object( $data ) ) {
-				$pod = $data;
-				$fields = pods_v( 'fields', $pod );
-
-				foreach( $fields as $field_name => $field ) {
-
-					unset( $field->id );
-
-					if ( pods_v( 'sister_id', $field ) ) {
-
-						unset( $field->sister_id );
-
-					}
-
-					$striped_fields[ $field_name ] = (object) $field;
-				}
-
-				if ( is_array( $striped_fields ) ) {
-					$pod->fields = (object) $striped_fields;
-				}
-
-				unset( $pod->id );
-
-			}
-
-		}
-
-
-		if ( isset( $pod ) ) {
-			return $pod;
-		}
-
-	}
-
-
 	/**
 	 * Headers for requests
 	 *
@@ -351,111 +210,6 @@ class Pods_Deploy {
 		);
 
 		return $headers;
-	}
-
-	/**
-	 * Get base URL for local or remote pods-api end points of REST API
-	 *
-	 * @param string $site Site name, either local, the default, or remote.
-	 *
-	 * @since 0.1.0
-	 *
-	 * @return string
-	 */
-	public static function base_url( $site = 'local' ) {
-		$urls = array(
-			'local' => json_url( 'pods-api' ),
-			'remote' => self::$remote_url,
-		);
-
-		return pods_v( $site, $urls  );
-
-	}
-
-	/**
-	 * Site name
-	 *
-	 * @since 0.1.0
-	 *
-	 * @return array
-	 */
-	public static function sites() {
-
-		return array( 'local', 'remote' );
-
-	}
-
-
-	/**
-	 * Get URL to make request to.
-	 *
-	 * @param string        $site       Site to request from local|remote
-	 * @param string        $action     Action to take get_pods|add_pod|get_pod|save_pod|delete_pod|update_rel
-	 * @param bool|string   $pod_name   Name of Pod. Required for get_pod|save_pod|delete_pod|update_rel not used for get_pods|add_pod|
-	 *
-	 *
-	 * @since 0.1.0
-	 *
-	 * @return string
-	 */
-	public static function urls( $site, $action, $pod_name = false ) {
-		$url = self::base_url( $site );
-
-		if ( $action == 'get_pods' ) {
-
-			return trailingslashit( $url ) . "?get_pods";
-
-		}
-		elseif( $action == 'add_pod' ) {
-
-			return untrailingslashit( $url ) . "?add_pod";
-
-		}
-		elseif( ! $pod_name ) {
-			new wp_error( 'pods-deploy-need-pod-name-for-url', __( sprintf( 'The action %1s requires that you specify a Pod name.', $action ), 'pods-deploy' ) );
-		}
-		else{
-			if( $action == 'get_pod' ) {
-
-				return trailingslashit( $url ) . "{$pod_name}";
-
-			}
-			elseif( $action == 'save_pod' ) {
-
-				return trailingslashit( $url ) . "{$pod_name}?save_pod";
-
-			}
-			elseif( $action == 'update_rel' ) {
-
-				return trailingslashit( $url ) . "{$pod_name}/update_rel";
-
-			}
-			elseif( $action == 'delete_pod' ) {
-
-				return trailingslashit( $url ) . "{$pod_name}?delete_pod";
-
-			}
-
-		}
-	}
-
-	/**
-	 * Takes response from this->request() and decodes JSON to PHP or returns wp_error object if an error occurred in the request.
-	 *
-	 * @param   json|wp_error $response
-	 *
-	 * @since 0.1.0
-	 *
-	 * @return  array|wp_error
-	 */
-	private static function conditionally_decode( $response ) {
-
-		if ( ! is_wp_error( $response ) ) {
-			$response = json_decode( $response );
-		}
-
-		return $response;
-		
 	}
 
 } 
