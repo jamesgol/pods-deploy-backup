@@ -29,6 +29,35 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 define( 'PODS_DEPLOY_VERSION', '0.1.0' );
 define( 'PODS_DEPLOY_DIR', plugin_dir_path( __FILE__ ) );
 
+
+global $pods_deploy_menu_page;
+
+/**
+ *
+ */
+add_action( 'admin_menu', 'pods_deploy_tools_menu' );
+function pods_deploy_tools_menu () {
+	global $pods_deploy_menu_page;
+
+	$pods_deploy_menu_page = add_management_page( 'Pods Deploy', 'Pods Deploy', 'manage_options', 'pods-deploy', 'pods_deploy_handler' );
+}
+
+/**
+ *
+ */
+function pods_deploy_handler () {
+
+	if ( isset( $_POST[ 'pods-deploy-submit' ] ) ) {
+
+		$remote_url = $_POST[ 'remote-url' ];
+		include_once( PODS_DEPLOY_DIR . 'class-pods-deploy.php' );
+		Pods_Deploy::deploy( $remote_url );
+	}
+	else {
+		include 'ui/main.php';
+	}
+}
+
 /**
  * An array of dependencies to check for before loading class.
  *
