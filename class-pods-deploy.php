@@ -2,7 +2,7 @@
 
 class Pods_Deploy {
 
-	private $config_key = 'pods_deploy_config';
+	private static $config_key = 'pods_deploy_config';
 
 	/**
 	 * URL for remote site's API
