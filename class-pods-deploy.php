@@ -4,7 +4,25 @@ class Pods_Deploy {
 
 
 	function deploy() {
-		return;
+		$api = pods_api();
+		$params[ 'names' ] = true;
+		$pod_names = $api->load_pods( $params );
+		if ( is_array( $pod_names ) ) {
+			$headers = $this->headers();
+			foreach( $pod_names as $pod ) {
+				$url = $this->urls( 'local', 'get_pod', $pod );
+				$pod = $this->request( $url, $headers );
+				$url = $this->urls( 'remote', 'add_pod', $pod );
+				$pod = $this->request( $url, $headers );
+			}
+			foreach( $pod_names as $pod ) {
+
+				$url = $this->urls( 'remote', 'update_rel', $pod );
+				$pod = $this->request( $url, $headers );
+			}
+
+		}
+
 	}
 
 	/**
@@ -293,8 +311,8 @@ class Pods_Deploy {
 	 * Get URL to make request to.
 	 *
 	 * @param string        $site       Site to request from local|remote
-	 * @param string        $action     Action to take get_pods|add_pod|get_pod|save_pod|delete_pod
-	 * @param bool|string   $pod_name   Name of Pod. Required for get_pod|save_pod|delete_pod not used for get_pods|add_pod|
+	 * @param string        $action     Action to take get_pods|add_pod|get_pod|save_pod|delete_pod|update_rel
+	 * @param bool|string   $pod_name   Name of Pod. Required for get_pod|save_pod|delete_pod|update_rel not used for get_pods|add_pod|
 	 *
 	 *
 	 * @since 0.1.0
@@ -326,6 +344,11 @@ class Pods_Deploy {
 			elseif( $action == 'save_pod' ) {
 
 				return trailingslashit( $url ) . "{$pod_name}?save_pod";
+
+			}
+			elseif( $action == 'update_rel' ) {
+
+				return trailingslashit( $url ) . "{$pod_name}?update_rel";
 
 			}
 			elseif( $action == 'delete_pod' ) {
