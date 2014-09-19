@@ -98,8 +98,6 @@ function pods_deploy( $remote_url = false ) {
 
 	}
 
-	$deploy = new pods_deploy( $remote_url );
-
-	$deploy->deploy();
+	return Pods_Deploy::deploy( $remote_url );
 
 }
