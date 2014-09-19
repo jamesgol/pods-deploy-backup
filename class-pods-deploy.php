@@ -2,111 +2,9 @@
 
 class Pods_Deploy {
 
-	private static $config_key = 'pods_deploy_config';
 
-	/**
-	 * URL for remote site's API
-	 *
-	 * @since 0.1.0
-	 *
-	 * @var
-	 */
-	private static $remote_url;
-
-	/**
-	 * Run the deployment
-	 *
-	 * @since 0.1.0
-	 *
-	 * @param string $remote_url
-	 */
-	public static function deploy( $remote_url ) {
-
-		self::$remote_url = $remote_url;
-
-		//clear cached data first
-		//@TODO Only do this when testing?
-		self::clear_cache();
-
-		//create Pods on remote
-		$config = self::prepare_data();
-		self::do_deploy( $config );
-
-
-		//recreate config, this time with the info we need for setting relationships
-		self::clear_cache();
-		$config = self::prepare_data();
-
-		//update Pods which sets relationships
-		self::do_deploy( self::get_config(), false );
-
-	}
-
-	/**
-	 * Process the deployment
-	 *
-	 *
-	 * @since 0.1.0
-	 *
-	 * @param array     $config Configuration for deployment.
-	 * @param bool      $new    If is a new deployment or an update
-	 */
-	public static function do_deploy( $config, $new = true ) {
-
-		if ( is_array( $config ) || is_object( $config ) ) {
-			$deploy_data = false;
-
-			//prepare and deploy per Pod
-			foreach ( $config as $pod_name => $pod ) {
-				$data = false;
-
-				//prepare data for this Pod
-				if ( isset( $pod[0] )  ) {
-					$pod = $pod[0];
-				}
-				if ( $new  ) {
-					$fields = pods_v( 'fields', $pod );
-					$config = pods_v( 'config', $pod );
-				}
-				else{
-					$fields = pods_v( 'remote_fields', $pod );
-					$config = pods_v( 'remote_config', $pod );
-				}
-
-				if ( ( is_object ( $fields ) || is_array( $fields ) ) && ( is_object( $config ) || is_array( $config )  )  ) {
-					$data = (array) $config;
-					$data[ 'fields' ] = (object) $fields;
-
-				}
-				else{
-					//@TODO error
-				}
-
-				//if data checks out deploy
-				if ( is_array( $data ) ) {
-					$url = self::base_url( 'remote' );
-
-					//add correct endpoint
-					if ( $new ) {
-						$method = 'add_pod';
-						$url = untrailingslashit( $url ) . '?' . $method;
-					}
-					else {
-						$method = 'save_pod';
-
-						$url = trailingslashit( $url )  . "{$pod_name}?{$method}";
-
-					}
-
-					//make the request
-					self::request( $url, self::headers(), 'POST', $data );
-
-				}
-
-			}
-
-		}
-
+	function deploy() {
+		return;
 	}
 
 	/**
@@ -163,106 +61,6 @@ class Pods_Deploy {
 
 	}
 
-	/**
-	 * Builds our configuration
-	 *
-	 * @since 0.1.0
-	 *
-	 * @return bool|array
-	 */
-	public static function store_config(  ) {
-		$pods = false;
-
-		foreach ( self::sites() as $site ) {
-			$url = self::base_url( $site );
-
-			if ( ! is_null( $url ) ) {
-				//@todo only make request when needed, most of data isn't already in config
-				$data = self::get_pods( $url, $site );
-
-				$data = json_decode( $data );
-				if ( is_array( $data ) || is_object( $data ) ) {
-
-					foreach ( $data as $pod ) {
-						$pods[ $pod->name ][ "{$site}_id" ] = $pod->id;
-						$pods[ $pod->name ][ "{$site}_config" ] = $pod;
-
-					}
-				}
-
-				if ( $pods ) {
-					foreach ( $pods as $name => $data ) {
-						$fields = self::get_fields( $url, $name );
-
-						if ( ! is_null( $fields ) && ( is_object( $fields ) || is_array( $fields ) ) ) {
-							$fields                            = (array) $fields;
-							$pods[ $name ][ "{$site}_fields" ] = $fields;
-						}
-
-					}
-				}
-
-			}
-
-		}
-
-		if ( is_array( $pods ) ) {
-
-			self::save_config( $pods );
-
-			return $pods;
-
-		}
-
-	}
-
-	/**
-	 * Get the config
-	 *
-	 * @since 0.0.3
-	 * @return array|bool|mixed|null|void
-	 */
-	public static function get_config() {
-		if ( false == ( $config = pods_transient_get( self::$config_key ) ) ){
-
-			$config = self::store_config();
-
-		}
-
-		return $config;
-
-	}
-
-	public static function save_config( $config ) {
-
-		pods_transient_set( self::$config_key, $config );
-
-	}
-
-	/**
-	 * Get fields for a Pod
-	 *
-	 * @param string    $base_url URL for pods-api end point.
-	 * @param string    $pod    Name of Pod to get fields for.
-	 *
-	 * @since 0.1.0
-	 *
-	 * @return array
-	 */
-	public static function get_fields( $base_url, $pod ) {
-
-		$url = trailingslashit( $base_url ) . "{$pod}";
-		$data = self::request( $url, self::headers() );
-		if ( ! is_wp_error( $data ) ) {
-			$data = json_decode( $data );
-
-			$fields = pods_v( 'fields', $data );
-
-			return $fields;
-
-		}
-
-	}
 
 	/**
 	 * Get basic info about all Pods.
@@ -306,119 +104,6 @@ class Pods_Deploy {
 
 	}
 
-	/**
-	 * Prepare data for a deployment
-	 *
-	 * @since 0.1.0
-	 *
-	 * @return bool|array
-	 */
-	public static function prepare_data() {
-
-		$pods = self::get_config();
-		$new_id = $deploy = false;
-		if( is_array( $pods ) ) {
-			foreach( $pods as $pod_name => $pod ) {
-
-				if ( isset ( $pod[ 'remote_fields' ] ) ) {
-
-					$relationships = self::find_relationships( $pods );
-					foreach ( $pod[ 'remote_fields' ] as $field_name => $data ) {
-						if ( array_key_exists( $field_name, $relationships ) ) {
-							$relationship = $relationships[ $field_name ];
-							$from_id = $data->id;
-							$sister_id = $pods[ $relationship[ 'to' ][ 'pod' ] ][ 'remote_fields' ][ $relationship[ 'to'] [ 'field' ] ]->id;
-							$pods[ $relationship[ 'to' ][ 'pod' ] ][ 'remote_fields' ][ $relationship[ 'to'] [ 'field' ] ]->sister_id = $from_id;
-							$pods[ $relationship[ 'from' ][ 'pod' ] ][ 'remote_fields' ][ $relationship[ 'from'] [ 'field' ] ]->sister_id = $sister_id;
-						}
-
-					}
-
-					$fields = pods_v( 'remote_fields', $pod );
-					$config = pods_v( 'remote_config', $pod );
-
-					$deploy[ $pod_name ] = array(
-						'config' => $config,
-						'fields' => $fields,
-					);
-
-					//Update our config with the corrected values for remote sister fields.
-					self::save_config( $pods );
-
-				}
-				else {
-
-					//no remote data yet, so clear IDs/sister IDs so we can create Pods on remote.
-					foreach( $pod[ 'local_fields' ] as $field_name => $data ) {
-						unset( $data->id );
-						if ( isset( $data->id ) ) {
-
-							unset( $data->sister_id );
-						}
-					}
-
-				}
-
-				$fields = pods_v( 'local_fields', $pod );
-				$config = pods_v( 'local_config', $pod );
-
-				$deploy[ $pod_name ] = array(
-					'config' => $config,
-					'fields' => $fields,
-
-				);
-
-			}
-
-			return $deploy;
-		}
-
-	}
-
-	/**
-	 * Find relationships
-	 *
-	 * @param $config
-	 *
-	 * @return bool|array
-	 */
-	public static function find_relationships( $config ) {
-
-		if ( is_array( $config ) ) {
-
-			foreach( $config as $pod_name => $pod ) {
-
-				$local_fields  = pods_v( 'local_fields', $pod );
-				$relationships = false;
-
-				if ( ! is_null( $local_fields ) ) {
-
-					foreach ( $local_fields as $field_name => $field ) {
-
-						if ( isset( $field->sister_id ) ) {
-
-							$relationships[ pods_v( 'name', $field ) ] = array (
-								'from' => array (
-									'pod'   => $pod_name,
-									'field' => pods_v( 'name', $field ),
-								),
-								'to'   => self::find_by_id( $field->sister_id ),
-							);
-						}
-					}
-				}
-
-				if ( is_array( $relationships ) ) {
-
-					return $relationships;
-
-				}
-
-			}
-
-		}
-
-	}
 
 	/**
 	 * Gets relationships
@@ -444,7 +129,7 @@ class Pods_Deploy {
 								'pod_name'   => $pod_name,
 								'field_name' => pods_v( 'name', $field ),
 							),
-							'to'   => self::find_by_id( $sister_id ),
+							'to'   => self::find_by_id( $sister_id, $pods ),
 						);
 
 					}
@@ -463,25 +148,27 @@ class Pods_Deploy {
 	/**
 	 * Build an array of field names and IDs per Pod.
 	 *
-	 * @param string $local_or_remote Optional. To base on local, the default, or remote config.
+
 	 *
 	 * @since 0.1.0
 	 *
 	 * @return bool
 	 */
-	public static function fields_by_name_id( $local_or_remote = 'local' ) {
-		$pods = self::get_config();
+	public static function fields_by_name_id( $pods ) {
 		$fields = false;
 
 		if ( is_array( $pods ) ) {
 			foreach ( $pods as $pod_name => $pod ) {
 
-				if ( isset( $pod[ "{$local_or_remote}_fields" ] ) ) {
-					$local_fields = $pod[ "{$local_or_remote}_fields" ];
+
+				$local_fields = pods_v( 'fields', $pod );
+				if ( $local_fields ) {
 					foreach ( $local_fields as $field_name => $data ) {
-						$fields[ $pod_name ][ $field_name ] = $data->id;
+						$fields[ $pod_name ][ $field_name ] = $data[ 'id' ];
 					}
 				}
+
+
 
 			}
 
@@ -494,14 +181,14 @@ class Pods_Deploy {
 	 * Get a field name by ID
 	 *
 	 * @param int       $id                 The field's ID.
-	 * @param string    $local_or_remote    Optional. To base on local, the default, or remote config.
+
 	 *
 	 * @since 0.1.0
 	 *
 	 * @return array                        Name of Pod and field name.
 	 */
-	public static function find_by_id( $id, $local_or_remote = 'local' ) {
-		$fields_by_id = self::fields_by_name_id( $local_or_remote );
+	public static function find_by_id( $id, $pods ) {
+		$fields_by_id = self::fields_by_name_id( $pods );
 		if ( is_array( $fields_by_id ) ) {
 			foreach( $fields_by_id as $pod_name => $fields ) {
 				$search = array_search( $id, $fields );
@@ -523,15 +210,15 @@ class Pods_Deploy {
 	 * Get a field ID by name.
 	 *
 	 * @param string $name              The field's name
-	 * @param string $local_or_remote   Optional. To base on local, the default, or remote config.
+
 	 *
 	 *
 	 * @since 0.0.3
 	 *
 	 * @return array                    Name of Pod and field ID
 	 */
-	public static function find_by_name( $name, $local_or_remote = 'local' ) {
-		$fields_by_name = self::fields_by_name_id( $local_or_remote );
+	public static function find_by_name( $name, $pods ) {
+		$fields_by_name = self::fields_by_name_id( $pods );
 
 		if ( is_array( $fields_by_name ) ) {
 			$fields_by_name = array_flip( $fields_by_name );
@@ -601,11 +288,6 @@ class Pods_Deploy {
 
 	}
 
-	public static function clear_cache() {
-
-		pods_transient_clear( self::$config_key );
-
-	}
 
 	/**
 	 * Get URL to make request to.
