@@ -43,266 +43,20 @@ function pods_deploy_tools_menu () {
 }
 
 /**
- * Callback for admin page
  *
- * Determines which function to call to generate admin
- *
- * @since 0.2.0
  */
 function pods_deploy_handler () {
 
 	if ( pods_v_sanitized( 'pods-deploy-submit', 'post') ) {
 
-		if( pods_v_sanitized( 'remote-base-url', 'post' ) ) {
-
-			pods_deploy_oauth_handler();
-
-		}
-		elseif ( pods_v_sanitized( 'oauth-verifier', 'post' ) ) {
-
-			pods_deploy_oauth_handler_step_2();
-
+		$remote_url = pods_v_sanitized( 'remote-url', 'post', false, true );
+		if ( $remote_url  ) {
+			pods_deploy( $remote_url );
 		}
 	}
 	else {
-		include 'ui/oauth-1.php';
+		include 'ui/main.php';
 	}
-}
-
-/**
- * Handles first step in oAuth process
- *
- * @since 0.2.0
- */
-function pods_deploy_oauth_handler() {
-
-		if (  isset( $_REQUEST[ '_wpnonce' ] ) ) {
-			//@todo verify nonce
-			$remote_base_url = pods_v_sanitized( 'remote-base-url', 'post' );
-			if ( $remote_base_url ) {
-				$response = wp_remote_get( $remote_base_url, array ( 'method' => 'GET' ) );
-				if ( wp_remote_retrieve_response_code( $response ) != 200 ) {
-					pods_error( var_Dump( $response ) );
-				}
-
-				$response = json_decode( wp_remote_retrieve_body( $response  ) );
-
-				$auth = pods_v_sanitized( 'authentication', $response );
-
-				if ( $auth ) {
-					$oauth_paths = pods_v( 'oauth1', $auth );
-
-					if ( $oauth_paths ) {
-						$oauth[ 'base-url' ] = $remote_base_url;
-						$oauth[ 'request-url' ] = $request_token_url = pods_v( 'request', $oauth_paths );
-						$oauth[ 'auth-url' ] = $authorizeUrl = pods_v( 'authorize', $oauth_paths );
-						$oauth[ 'access-url' ] = $accessUrl = pods_v( 'access', $oauth_paths );
-						$oauth [ 'version' ] = $oauth_version = pods_v( 'version', $oauth_paths );
-
-						$oauth[ 'consumer-key' ] = $consumer_key = pods_v_sanitized( 'consumer-key', 'post' );
-						$oauth[ 'consumer-secret' ] = $consumer_secret = pods_v_sanitized( 'consumer-secret', 'post' );
-
-						update_option( 'pods_deploy_oauth', $oauth );
-
-						if ( $request_token_url && $consumer_key && $consumer_secret && $authorizeUrl ) {
-							$oauth_signature_method = "HMAC-SHA1";
-							$oauth_timestamp   = time();
-							$nonce = wp_create_nonce();
-
-							$args = pods_deploy_oauth_url_args( $consumer_key, $nonce, $oauth_signature_method, $oauth_timestamp, $oauth_version );
-
-							$oauth_sig = pods_deploy_oauth_sig_base( $consumer_key, $nonce, $oauth_signature_method, $oauth_timestamp, $consumer_secret, $request_token_url, $oauth_version );
-
-							$request_url = add_query_arg( $args, $request_token_url );
-							$request_url = add_query_arg(
-								array(
-									'oauth_signature' => rawurlencode( $oauth_sig ),
-								), $request_url );
-
-
-
-							$response = wp_remote_get( $request_url, array ( 'method' => 'GET' ) );
-							if ( ! is_wp_error( $response ) ) {
-								$response = wp_remote_retrieve_body( $response );
-							} else {
-
-								pods_error( var_dump( $response ) );
-							}
-
-							parse_str( $response, $values );
-							if ( pods_v( 'oauth_token', $values ) && pods_v( 'oauth_token_secret', $values ) )  {
-								$_SESSION[ "requestToken" ]  = $values[ "oauth_token" ];
-								$_SESSION[ "requestTokenSecret" ] = $values[ "oauth_token_secret" ];
-
-								$redirectUrl = $authorizeUrl . "?oauth_token=" . $_SESSION[ "requestToken" ];
-								$redirectUrl .= '&output=embed';
-								echo sprintf( '<iframe width="500" height="500" src="%1s"></iframe>', $redirectUrl );
-
-								include( PODS_DEPLOY_DIR . 'ui/oauth-2.php' );
-							}else {
-								pods_error( __( 'Could not get oAuth tokens.', 'pods-deploy' ) );
-							}
-
-						}
-
-						}
-
-					}
-
-				}
-
-		}
-
-}
-
-/**
- * Handles second step in oAuth process
- *
- * @since 0.0.2
- */
-function pods_deploy_oauth_handler_step_2() {
-	if (  isset( $_REQUEST[ '_wpnonce' ] ) ) {
-		//@todo verify nonce
-		$oauth = get_option( 'pods_deploy_oauth', array() );
-
-		$oauth_verifier = pods_v_sanitized( 'oauth-verifier', 'post' );
-
-		if ( $oauth_verifier && ! empty( $oauth ) ) {
-			$request_token_url = pods_v( 'request-url', $oauth );
-
-			$consumer_key     = pods_v( 'consumer-key', $oauth );
-			$consumer_secret  = pods_v( 'consumer-secret', $oauth );
-			$access_token_url  = pods_v( 'access-url', $oauth );
-			if ( $request_token_url && $consumer_key && $consumer_secret && $access_token_url  ) {
-				$oauth_signature_method = "HMAC-SHA1";
-				$oauth_version         = $oauth [ 'version' ];
-				$oauth_timestamp       = time();
-				$nonce                = wp_create_nonce();
-
-			}
-
-			$oauth_sig = pods_deploy_oauth_sig_base( $consumer_key, $nonce, $oauth_signature_method, $oauth_timestamp, $consumer_secret, $request_token_url, $oauth_version );
-
-			$additional_args = array(
-				'oauth_token' => rawurlencode( $_SESSION[ 'requestToken'] ),
-				'oauth_verifier' => rawurlencode( $oauth_verifier ),
-				'oauth_signature' => rawurlencode( $oauth_sig ),
-			);
-
-			$args = pods_deploy_oauth_url_args( $consumer_key, $nonce, $oauth_signature_method, $oauth_timestamp, $oauth_version );
-
-			$request_url = add_query_arg( $args, $access_token_url );
-			$request_url = add_query_arg( $additional_args, $request_url );
-
-
-			$response = wp_remote_get( $request_url, array( 'method' => 'GET' ) );
-
-			if ( ! is_wp_error( $response ) ) {
-				$response = wp_remote_retrieve_body( $response );
-			}
-			else{
-				pods_error( var_dump( $response ) );
-			}
-
-			var_dump( $response );
-
-			$request_url = trailingslashit(  $oauth[ 'base-url' ] ) . 'pods-api/jedi/4725?';
-			parse_str( $response, $values );
-			if ( pods_v( 'oauth_token', $values ) && pods_v( 'oauth_token_secret', $values ) ) {
-				$_SESSION[ "requestToken" ]       = $values[ "oauth_token" ];
-				$_SESSION[ "requestTokenSecret" ] = $values[ "oauth_token_secret" ];
-
-				$nonce = wp_create_nonce();
-				$oauth_timestamp = time();
-
-				$oauth_sig = pods_deploy_oauth_sig_base( $consumer_key, $nonce, $oauth_signature_method, $oauth_timestamp, $consumer_secret, $request_token_url, $oauth_version );
-
-				$additional_args = array(
-					'oauth_token' => rawurlencode( $_SESSION[ 'requestToken'] ),
-					'oauth_verifier' => rawurlencode( $oauth_verifier ),
-					'oauth_signature' => rawurlencode( $oauth_sig ),
-				);
-
-				$args = pods_deploy_oauth_url_args( $consumer_key, $nonce, $oauth_signature_method, $oauth_timestamp, $oauth_version );
-
-				$request_url = add_query_arg( $args, $request_url );
-				$request_url = add_query_arg( $additional_args, $request_url );
-
-				$data        = array ( 'lightsaber_color' => 'green' );
-				$data        = json_encode( $data );
-
-				var_dump( $request_url );
-				$response    = wp_remote_get( $request_url, array ( 'method' => 'POST', 'body' => $data ) );
-
-				var_dump( $response );
-
-			}
-
-		}
-
-	}
-
-}
-
-/**
- * URL args for oAuth
- *
- * @param      $consumer_key
- * @param      $nonce
- * @param      $oauth_signature_method
- * @param      $oauth_timestamp
- * @param      $oauth_version
- * @param bool $additional_args
- *
- * @since 0.2.0
- *
- * @return array
- */
-function pods_deploy_oauth_url_args( $consumer_key, $nonce, $oauth_signature_method, $oauth_timestamp, $oauth_version, $additional_args = false ) {
-	$args = array(
-		'oauth_consumer_key' => rawurlencode( $consumer_key ),
-		'oauth_nonce' => rawurlencode( $nonce ),
-		'oauth_signature_method' =>  rawurlencode( $oauth_signature_method ),
-		'oauth_timestamp' => rawurlencode( $oauth_timestamp ),
-		'oauth_version' => rawurlencode( $oauth_version ),
-	);
-
-	if ( is_array( $additional_args ) ) {
-		$args = array_merge( $args, $additional_args );
-	}
-
-	return $args;
-
-}
-
-/**
- * Build a oAuth signature
- *
- * @param $consumer_key
- * @param $nonce
- * @param $oauth_signature_method
- * @param $oauth_timestamp
- * @param $consumer_secret
- * @param $request_token_url
- * @param $oauth_version
- *
- * @since 0.2.0
- *
- * @return string
- */
-function pods_deploy_oauth_sig_base( $consumer_key, $nonce, $oauth_signature_method, $oauth_timestamp, $consumer_secret, $request_token_url, $oauth_version ) {
-	$sigBase  = "GET&" . rawurlencode( $request_token_url ) . "&"
-	            . rawurlencode( "oauth_consumer_key=" . rawurlencode( $consumer_key )
-	                            . "&oauth_nonce=" . rawurlencode( $nonce )
-	                            . "&oauth_signature_method=" . rawurlencode( $oauth_signature_method )
-	                            . "&oauth_timestamp=" . $oauth_timestamp
-	                            . "&oauth_version=" . $oauth_version );
-	$sigKey  = $consumer_secret . "&";
-
-	$oauth_sig = base64_encode( hash_hmac( "sha1", $sigBase, $sigKey, true ) );
-
-	return $oauth_sig;
-
 }
 
 /**
@@ -344,7 +98,6 @@ function pods_deploy_load_plugin() {
 	}
 
 	else {
-
 		include_once( PODS_DEPLOY_DIR . 'class-pods-deploy.php' );
 
 	}
@@ -378,20 +131,3 @@ function pods_deploy( $remote_url = false ) {
 	return Pods_Deploy::deploy( $remote_url );
 
 }
-
-//add_action( 'init', 'pods_deploy_auth' );
-function pods_deploy_auth() {
-	$one = pods_v( 'HTTP_0', $_SERVER );
-	$two = pods_v( 'HTTP_1', $_SERVER );
-	if ( $one && $two ) {
-
-		if ( $one === get_option( 'pods_deploy_secret_key_1', 'foo' ) && $two === get_option( 'pods_deploy_secret_key_2', 'bar' ) ) {
-			add_filter( 'pods_json_api_access_api_package', '__return_true' );
-			add_filter( 'pods_json_api_access_api_update_rel', '__return_true' );
-		}
-
-	}
-
-}
-
-
