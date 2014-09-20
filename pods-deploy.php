@@ -50,8 +50,12 @@ function pods_deploy_handler () {
 	if ( pods_v_sanitized( 'pods-deploy-submit', 'post') ) {
 
 		$remote_url = pods_v_sanitized( 'remote-url', 'post', false, true );
-		if ( $remote_url  ) {
-			pods_deploy( $remote_url );
+		$request_key = pods_v_sanitized( 'request-key', 'post' );
+		$request_token = pods_v_sanitized( 'request-token', 'post' );
+		if ( $remote_url && $request_token && $request_key ) {
+
+
+			pods_deploy( $remote_url, $request_key, $request_token );
 		}
 	}
 	else {
@@ -113,7 +117,7 @@ function pods_deploy_load_plugin() {
  *
  * @param $remote_url
  */
-function pods_deploy( $remote_url = false ) {
+function pods_deploy( $remote_url = false, $request_key, $request_token ) {
 
 	if ( ! $remote_url  ) {
 		$remote_url = get_option( 'pods_deploy_remote_url' );
@@ -128,7 +132,7 @@ function pods_deploy( $remote_url = false ) {
 
 	}
 
-	return Pods_Deploy::deploy( $remote_url );
+	return Pods_Deploy::deploy( $remote_url, $request_key, $request_token );
 
 }
 
@@ -139,7 +143,7 @@ function pods_deploy( $remote_url = false ) {
  */
 add_action( 'init', 'pods_deploy_auth' );
 function pods_deploy_auth() {
-	if ( get_option( 'pods_deploy_allow_deploy', false ) ) {
+	if ( pods_v( 'HTTP_X_PODS_DEPLOY_TOKEN', $_SERVER ) && get_option( 'pods_deploy_allow_deploy', false ) ) {
 
 		include_once( PODS_DEPLOY_DIR . 'class-pods-deploy-auth.php' );
 		

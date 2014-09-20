@@ -3,11 +3,11 @@
 class Pods_Deploy {
 	public static $remote_url;
 
-	public static function deploy( $remote_url ) {
+	public static function deploy( $remote_url, $request_key, $request_token ) {
 		$remote_url = trailingslashit( $remote_url ) . 'pods-api/';
 		self::$remote_url = $remote_url;
 
-		$headers = self::headers();
+		$headers = self::headers( $request_key, $request_token );
 
 		if ( ! class_exists(  'Pods_Migrate_Packages' ) ) {
 			return new WP_Error( 'pods-deploy-need-packages',  __( 'You must activate the Packages Component on both the site sending and receiving this package.', 'pods-deploy' ) );
