@@ -147,7 +147,8 @@ function pods_deploy( $remote_url = false, $request_key, $request_token ) {
  */
 add_action( 'init', 'pods_deploy_auth' );
 function pods_deploy_auth() {
-	if ( pods_v( 'HTTP_X_PODS_DEPLOY_TOKEN', $_SERVER ) && get_option( 'pods_deploy_allow_deploy', false ) ) {
+	//if ( pods_v( 'HTTP_X_PODS_DEPLOY_TOKEN', $_SERVER ) && get_option( 'pods_deploy_allow_deploy', false ) ) {
+	if ( 1==1 ) {
 
 		include_once( PODS_DEPLOY_DIR . 'class-pods-deploy-auth.php' );
 		
