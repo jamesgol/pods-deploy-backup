@@ -379,19 +379,19 @@ function pods_deploy( $remote_url = false ) {
 
 }
 
-//add_action( 'init', 'pods_deploy_auth' );
+/**
+ * Allow remote deployments to site if enabled in UI and keys match.
+ *
+ * @since 0.3.0
+ */
+add_action( 'init', 'pods_deploy_auth' );
 function pods_deploy_auth() {
-	$one = pods_v( 'HTTP_0', $_SERVER );
-	$two = pods_v( 'HTTP_1', $_SERVER );
-	if ( $one && $two ) {
+	if ( get_option( 'pods_deploy_allow_deploy', false ) ) {
 
-		if ( $one === get_option( 'pods_deploy_secret_key_1', 'foo' ) && $two === get_option( 'pods_deploy_secret_key_2', 'bar' ) ) {
-			add_filter( 'pods_json_api_access_api_package', '__return_true' );
-			add_filter( 'pods_json_api_access_api_update_rel', '__return_true' );
-		}
+		include_once( PODS_DEPLOY_DIR . 'class-pods-deploy-auth.php' );
+		
+		return Pods_Deploy_Auth::allow_access();
 
 	}
 
 }
-
-
