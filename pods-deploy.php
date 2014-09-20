@@ -57,6 +57,9 @@ function pods_deploy_handler () {
 
 			pods_deploy( $remote_url, $request_key, $request_token );
 		}
+		else{
+			pods_error( var_dump( array($remote_url, $request_key, $request_token )));
+		}
 	}
 	else {
 		include 'ui/main.php';
@@ -102,6 +105,7 @@ function pods_deploy_load_plugin() {
 	}
 
 	else {
+		include_once( PODS_DEPLOY_DIR . 'class-pods-deploy-auth.php' );
 		include_once( PODS_DEPLOY_DIR . 'class-pods-deploy.php' );
 
 	}
