@@ -131,3 +131,21 @@ function pods_deploy( $remote_url = false ) {
 	return Pods_Deploy::deploy( $remote_url );
 
 }
+
+/**
+ * Allow remote deployments to site if enabled in UI and keys match.
+ *
+ * @since 0.3.0
+ */
+add_action( 'init', 'pods_deploy_auth' );
+function pods_deploy_auth() {
+	if ( get_option( 'pods_deploy_allow_deploy', false ) ) {
+
+		include_once( PODS_DEPLOY_DIR . 'class-pods-deploy-auth.php' );
+		
+		return Pods_Deploy_Auth::allow_access();
+
+	}
+
+}
+
