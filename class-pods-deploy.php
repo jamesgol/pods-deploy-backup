@@ -198,16 +198,17 @@ class Pods_Deploy {
 	/**
 	 * Headers for requests
 	 *
-	 * @TODO auth intelligently
-	 *
 	 * @since 0.1.0
 	 *
 	 * @return array
 	 */
-	public static function headers() {
+	public static function headers( $key, $token ) {
 		$headers    = array (
-			'Authorization' => 'Basic ' . base64_encode( 'admin' . ':' . 'password' ),
+			'pods_deploy_key' => $key,
+			'pods_deploy_token' => $token,
 		);
+
+		$headers = json_encode( $headers );
 
 		return $headers;
 	}
