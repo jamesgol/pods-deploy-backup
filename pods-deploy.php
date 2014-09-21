@@ -28,6 +28,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 define( 'PODS_DEPLOY_VERSION', '0.1.0' );
 define( 'PODS_DEPLOY_DIR', plugin_dir_path( __FILE__ ) );
+define( 'PODS_DEPLOY_MIN_JSON_API_VERSION', '0.2' );
+define( 'PODS_DEPLOY_MIN_PODS_VERSION', '2.4.3' );
 
 
 global $pods_deploy_menu_page;
@@ -109,6 +111,17 @@ function pods_deploy_load_plugin() {
 
 	}
 
+	if ( ! $fail && 1==9 ) {
+		if ( ! version_compare( PODS_JSON_API_VERSION, PODS_DEPLOY_MIN_JSON_API_VERSION ) <= 0 ) {
+			$fail[ ] = sprintf( 'Pods Deploy requires Pods JSON API version %1s or later.', PODS_DEPLOY_MIN_JSON_API_VERSION );
+		}
+
+		if ( ! version_compare( PODS_JSON_API_VERSION, PODS_DEPLOY_MIN_PODS_VERSION ) <= 0 ) {
+			$fail[] = sprintf( 'Pods Deploy requires Pods version %1s or later.', PODS_DEPLOY_MIN_PODS_VERSION );
+		}
+
+	}
+
 	if ( is_array( $fail ) ) {
 		if ( ! is_admin() ) {
 			echo sprintf( '<div id="message" class="error"><p>%s</p></div>',
@@ -120,6 +133,8 @@ function pods_deploy_load_plugin() {
 	else {
 		include_once( PODS_DEPLOY_DIR . 'class-pods-deploy-auth.php' );
 		include_once( PODS_DEPLOY_DIR . 'class-pods-deploy.php' );
+
+		return true;
 
 	}
 

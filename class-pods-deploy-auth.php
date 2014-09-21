@@ -254,7 +254,7 @@ class Pods_Deploy_Auth {
 	 * Checks if deployment is currently allowed for this site.
 	 *
 	 * @since 0.3.0
-	 *        
+	 *
 	 * @return bool
 	 */
 	public static function deploy_active() {
