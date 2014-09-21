@@ -1,3 +1,8 @@
+<?php
+	$keys = Pods_Deploy_Auth::get_keys();
+	$public = pods_v_sanitized( 'public', $keys, '' );
+	$private = pods_v_sanitized( 'private', $keys, '' );
+?>
 <div class="wrap pods-deploy-admin">
 	<form action="?page=pods-deploy" method="post">
 
@@ -10,13 +15,13 @@
 		</p>
 
 		<p>
-			<label for="public-key">public-key</label>
-			<input type="text" class="" name="public-key" id="public-key" value="">
+			<label for="request-key">public-key</label>
+			<input type="text" class="" name="request-key" id="request-key" value="<?php echo $public; ?>">
 		</p>
 
 		<p>
 			<label for="request-token">request-token:</label>
-			<input type="text" class="" name="request-token" id="request-token" value="">
+			<input type="text" class="" name="request-token" id="request-token" value="<?php echo $private; ?>">
 		</p>
 
 

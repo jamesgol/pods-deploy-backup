@@ -4,7 +4,7 @@ class Pods_Deploy {
 	public static $remote_url;
 
 	public static function deploy( $remote_url, $request_key, $request_token ) {
-		$remote_url = trailingslashit( $remote_url ) . 'pods-api/';
+
 		self::$remote_url = $remote_url;
 
 		$headers = self::headers( $request_key, $request_token );
@@ -22,23 +22,30 @@ class Pods_Deploy {
 		);
 		$data = Pods_Migrate_Packages::export( $params );
 
-		$url = $remote_url . 'package';
+
+		$url = trailingslashit( $remote_url ) . 'pods-components?package';
+
+		$data = json_encode( $data );
+
 		$response = wp_remote_post( $url, array (
-				'method' => 'POST',
-				'headers'     => $headers,
-				'body' => $data,
+				'method'    => 'POST',
+				'headers'   => $headers,
+				'body'      => $data,
 			)
 		);
 
-		//@TODO check && 201 == wp_remote_retrieve_response_code( $response )
-		if ( ! is_wp_error( $response ) ) {
+		if ( ! is_wp_error( $response ) && 201 == wp_remote_retrieve_response_code( $response ) ) {
 			$responses = array();
 			$api = pods_api();
 			$params[ 'names' ] = true;
 			$pod_names = $api->load_pods( $params );
+			$pod_names = array_flip( $pod_names );
 			$data = Pods_Deploy::get_relationships();
+			$pods_api_url = trailingslashit( $remote_url ) . 'pods-api/';
+
 			foreach( $pod_names as $pod_name ) {
-				$url = $remote_url. "{$pod_name}/update_rel";
+				$url = $pods_api_url. "{$pod_name}/update_rel";
+				echo"{$url}\n";
 				$responses[] = wp_remote_post( $url, array (
 						'method'      => 'POST',
 						'headers'     => $headers,
@@ -48,14 +55,15 @@ class Pods_Deploy {
 
 			}
 
-			if ( empty( $responses ) ) {
-				foreach( $responses as $response ) {
-					echo wp_remote_retrieve_body( $response );
-				}
+			echo 'Completed';
 
-			}
+			//@TODO reporting
 
 		}
+		else{
+			//@TODO reporting
+		}
+
 
 	}
 
@@ -208,7 +216,7 @@ class Pods_Deploy {
 			'pods_deploy_token' => $token,
 		);
 
-		$headers = json_encode( $headers );
+		//$headers = json_encode( $headers );
 
 		return $headers;
 	}
