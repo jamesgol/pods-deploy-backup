@@ -29,7 +29,7 @@
 		<label for="private-key">
 			<?php _e( 'Remote Site Private Key', 'pods-deploy' ); ?>
 		</label>
-		<input type="text" class="" name="public-key" id="private-key" value="<?php echo $private_local; ?>">
+		<input type="text" class="" name="private-key" id="private-key" value="<?php echo $private_local; ?>">
 		<p class="instruction">
 			<?php _e( 'Private key from remote site.', 'pods-deploy' ); ?>
 		</p>

@@ -67,6 +67,7 @@ function pods_deploy_handler () {
 			pods_deploy( $remote_url, $private_key, $public_key );
 		}
 		else{
+			_e( 'Keys and URL for remote site not set', 'pods-deploy' );
 			pods_error( var_dump( array($remote_url, $private_key, $public_key ) ) );
 		}
 	}
