@@ -16,6 +16,32 @@
 		$key_gen_header = __( 'Click to generate new keys and allow deployments to this site', 'pods-deploy' );
 	}
 
+	$form_fields = array(
+		'remote-url' =>
+			array(
+				'label' => __( 'URL To Remote Site API', 'pods-deploy' ),
+				'help' => __( 'For example "http://example.com/wp-json"', 'pods-deploy' ),
+				'value' => '',
+				'options' => '',
+			),
+		'public-key' =>
+			array(
+				'label' => __( 'Remote Site Public Key', 'pods-deploy' ),
+				'help' => __( 'Public key from remote site.', 'pods-deploy' ),
+				'value' => $public_local,
+				'options' => '',
+			),
+		'private-key' =>
+			array(
+				'label' => __( 'Remote Site Private Key', 'pods-deploy' ),
+				'help' => __( 'Private key from remote site.', 'pods-deploy' ),
+				'value' => $private_local,
+				'options' => '',
+			),
+
+	);
+
+
 ?>
 <div class="wrap pods-admin">
 	<form action="" method="post">
@@ -57,7 +83,7 @@
 		$tab = pods_v( 'tab', 'get', $default );
 		$tab = sanitize_title( $tab );
 
-		$data = compact( array( 'keys', 'public_local', 'private_local', 'public_remote', 'private_remote', 'deploy_active', 'key_gen_submit', 'key_gen_header' ) );
+		$data = compact( array( 'keys', 'public_local', 'private_local', 'public_remote', 'private_remote', 'deploy_active', 'key_gen_submit', 'key_gen_header', 'form_fields' ) );
 		echo pods_view( PODS_DEPLOY_DIR . 'ui/' . $tab . '.php', $data );
 		?>
 	</form>
