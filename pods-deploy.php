@@ -33,85 +33,6 @@ define( 'PODS_DEPLOY_MIN_PODS_VERSION', '2.4.3' );
 
 
 /**
- * Callback for adding Pods Deploy to menus.
- *
- * Callback is in the activation function below.
- *
- * @since 0.3.0
- */
-function pods_deploy_tools_menu ( $admin_menus ) {
-
-	$admin_menus[ 'pods-deploy'] = array(
-		'label' => __( 'Pods Deploy', 'pods-deploy' ),
-		'function' => 'pods_deploy_handler',
-		'access' => 'manage_options'
-
-	);
-
-	return $admin_menus;
-
-}
-
-/**
- *
- */
-function pods_deploy_handler () {
-
-	if ( pods_v_sanitized( 'pods-deploy-submit', 'post') ) {
-		if ( ! pods_deploy_dependency_check() ) {
-			return;
-		}
-
-		if ( ! ( $nonce = pods_v_sanitized( '_wpnonce', $_REQUEST ) ) || ! wp_verify_nonce( $nonce, 'pods-deploy' ) ) {
-			pods_error( __( 'Bad nonce.', 'pods-deploy' ) );
-		}
-
-		$remote_url = pods_v_sanitized( 'remote-url', 'post', false, true );
-		$private_key = pods_v_sanitized( 'private-key', 'post' );
-		$public_key = pods_v_sanitized( 'public-key', 'post' );
-		if ( $remote_url && $private_key && $public_key ) {
-			Pods_Deploy_Auth::save_local_keys( $private_key, $public_key );
-
-			$params = array(
-				'remote_url' => $remote_url,
-				'private_key' => $private_key,
-				'public_key' => $public_key,
-
-			);
-
-			foreach( pods_deploy_pod_names() as $name => $label ) {
-				if (pods_v_sanitized( $name, 'POST' ) ) {
-					$params[ 'pods' ][] = $name;
-				}
-			}
-
-			pods_deploy( $params );
-
-		}
-		else{
-			_e( 'Keys and URL for remote site not set', 'pods-deploy' );
-			pods_error( var_dump( array($remote_url, $private_key, $public_key ) ) );
-		}
-	}
-	elseif( pods_v_sanitized( 'pods-deploy-key-gen-submit', 'post' ) ) {
-		$activate = pods_v_sanitized( 'allow-deploy', 'post' );
-		if ( $activate ) {
-			Pods_Deploy_Auth::allow_deploy();
-			Pods_Deploy_Auth::generate_keys();
-			include 'ui/main.php';
-		}
-		else {
-			Pods_Deploy_Auth::revoke_keys();
-		}
-
-		include_once( 'ui/main.php' );
-	}
-	else {
-		include_once( 'ui/main.php' );
-	}
-}
-
-/**
  * An array of dependencies to check for before loading class.
  *
  * @since 0.1.0
@@ -138,7 +59,9 @@ function pods_deploy_load_plugin() {
 		include_once( PODS_DEPLOY_DIR . 'class-pods-deploy-auth.php' );
 		include_once( PODS_DEPLOY_DIR . 'class-pods-deploy-ui.php' );
 		include_once( PODS_DEPLOY_DIR . 'class-pods-deploy.php' );
-		add_filter( 'pods_admin_menu', 'pods_deploy_tools_menu' );
+
+		$GLOBALS[ 'Pods_Deploy_UI' ] = $ui = new Pods_Deploy_UI();
+		add_filter( 'pods_admin_menu', array( $ui, 'menu') );
 		add_action( 'init', 'pods_deploy_auth' );
 	}
 
@@ -229,11 +152,6 @@ function pods_deploy_auth() {
 
 }
 
-function pods_deploy_pod_names() {
-	$api = pods_api();
-	$params[ 'names' ] = true;
-	$pod_names = $api->load_pods( $params );
 
-	return $pod_names;
-}
+
 

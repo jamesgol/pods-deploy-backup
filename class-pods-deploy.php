@@ -11,7 +11,7 @@ class Pods_Deploy {
 		$timeout = pods_v( 'timeout', $deploy_params, 60 );
 
 		if ( is_null( $pod_names = pods_v( 'pods', $deploy_params ) ) ) {
-			$pod_names = pods_deploy_pod_names();
+			$pod_names = $GLOBALS[ 'Pods_Deploy_UI' ]->pod_names();
 		}
 
 		if ( ! $remote_url ||  ! $public_key || ! $private_key ) {
