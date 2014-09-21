@@ -1,9 +1,3 @@
-<?php
-
-
-
-
-?>
 <div class="wrap pods-admin">
 	<form action="" method="post">
 

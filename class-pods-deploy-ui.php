@@ -7,7 +7,7 @@ class Pods_Deploy_UI {
 	 *
 	 * Callback is in the activation function below.
 	 *
-	 * @since 0.3.0
+	 * @since 0.4.0
 	 */
 	function menu ( $admin_menus ) {
 
@@ -23,7 +23,9 @@ class Pods_Deploy_UI {
 	}
 
 	/**
+	 * Handles UI output and form processing
 	 *
+	 * @since 0.4.0
 	 */
 	function deploy_handler () {
 
@@ -82,6 +84,11 @@ class Pods_Deploy_UI {
 
 	}
 
+	/**
+	 * Output a list of field names.
+	 *
+	 * @return array|mixed
+	 */
 	function pod_names() {
 		$api = pods_api();
 		$params[ 'names' ] = true;
@@ -91,6 +98,13 @@ class Pods_Deploy_UI {
 
 	}
 
+	/**
+	 * Form fields for deploy form
+	 *
+	 * @since 0.4.0
+	 *
+	 * @return array
+	 */
 	function form_fields() {
 		$keys = Pods_Deploy_Auth::get_keys( false );
 		$public_local = pods_v_sanitized( 'public', $keys, '' );
@@ -134,6 +148,13 @@ class Pods_Deploy_UI {
 
 	}
 
+	/**
+	 * Include main UI view and add scope data into it.
+	 *
+	 * @since 0.4.0
+	 *
+	 * @return bool|string
+	 */
 	function include_view() {
 		$keys = Pods_Deploy_Auth::get_keys( true );
 		$public_remote = pods_v_sanitized( 'public', $keys, '' );
