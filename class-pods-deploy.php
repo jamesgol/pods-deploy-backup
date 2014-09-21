@@ -10,6 +10,10 @@ class Pods_Deploy {
 		$private_key = pods_v( 'private_key', $deploy_params );
 		$timeout = pods_v( 'timeout', $deploy_params, 60 );
 
+		if ( is_null( $pod_names = pods_v( 'pods', $deploy_params ) ) ) {
+			$pod_names = pods_deploy_pod_names();
+		}
+
 		if ( ! $remote_url ||  ! $public_key || ! $private_key ) {
 			echo self::output_message( __( 'Invalid parameters:( You shall not pass! ', 'pods-deploy' ) );
 
@@ -105,9 +109,8 @@ class Pods_Deploy {
 		$fail = false;
 
 		$responses = array();
-		$api = pods_api();
-		$params[ 'names' ] = true;
-		$pod_names = $api->load_pods( $params );
+
+
 		$pod_names = array_flip( $pod_names );
 		$data = Pods_Deploy::get_relationships();
 		$pods_api_url = trailingslashit( $remote_url ) . 'pods-api/';

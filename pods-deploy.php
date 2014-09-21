@@ -79,7 +79,14 @@ function pods_deploy_handler () {
 
 			);
 
+			foreach( pods_deploy_pod_names() as $name => $label ) {
+				if (pods_v_sanitized( $name, 'POST' ) ) {
+					$params[ 'pods' ][] = $name;
+				}
+			}
+
 			pods_deploy( $params );
+
 		}
 		else{
 			_e( 'Keys and URL for remote site not set', 'pods-deploy' );
@@ -219,5 +226,13 @@ function pods_deploy_auth() {
 
 	}
 
+}
+
+function pods_deploy_pod_names() {
+	$api = pods_api();
+	$params[ 'names' ] = true;
+	$pod_names = $api->load_pods( $params );
+
+	return $pod_names;
 }
 
