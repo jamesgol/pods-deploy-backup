@@ -41,6 +41,18 @@
 
 	);
 
+	$api = pods_api();
+	$params[ 'names' ] = true;
+	$pod_names = $api->load_pods( $params );
+
+	foreach( $pod_names as $name => $label ) {
+		$form_fields[ $name ] = array(
+			'label' => $label,
+			'type' => 'boolean',
+		);
+	}
+
+
 
 ?>
 <div class="wrap pods-admin">
