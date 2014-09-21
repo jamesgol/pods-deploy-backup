@@ -68,7 +68,14 @@ function pods_deploy_handler () {
 		if ( $remote_url && $private_key && $public_key ) {
 			Pods_Deploy_Auth::save_local_keys( $private_key, $public_key );
 
-			pods_deploy( $remote_url, $private_key, $public_key );
+			$params = array(
+				'remote_url' => $remote_url,
+				'private_key' => $private_key,
+				'public_key' => $public_key,
+
+			);
+
+			pods_deploy( $params );
 		}
 		else{
 			_e( 'Keys and URL for remote site not set', 'pods-deploy' );
@@ -184,22 +191,15 @@ function pods_deploy_dependency_check() {
  *
  * @param $remote_url
  */
-function pods_deploy( $remote_url = false, $private_key, $public_key ) {
+function pods_deploy( $params ) {
 
-	if ( ! $remote_url  ) {
-		$remote_url = get_option( 'pods_deploy_remote_url' );
+	if ( ! is_null( pods_v( 'remote_url', $params ) ) {
+		$params[ 'remote_url' ] = get_option( 'pods_deploy_remote_url' );
 	}
 
-	if ( ! $remote_url ) {
-		if (  is_admin() ) {
-			//@todo admin nag
-		}
 
-		return;
 
-	}
-
-	return Pods_Deploy::deploy( $remote_url, $private_key, $public_key );
+	return Pods_Deploy::deploy( $params );
 
 }
 

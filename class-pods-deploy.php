@@ -4,7 +4,18 @@ class Pods_Deploy {
 
 	public static $elapsed_time;
 
-	public static function deploy( $remote_url, $public_key, $private_key ) {
+	public static function deploy( $deploy_params ) {
+		$remote_url = pods_v( 'remote_url', $deploy_params );
+		$public_key = pods_v( 'public_key', $deploy_params );
+		$private_key = pods_v( '$private_key', $deploy_params );
+
+		if ( ! $remote_url ||  ! $public_key || ! $private_key ) {
+			echo self::output_message( __( 'Invalid parameters:( You shall not pass! ', 'pods-deploy' ) );
+
+			return false;
+			
+		}
+
 		$fail = false;
 
 		self::$elapsed_time = microtime( true );
