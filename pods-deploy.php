@@ -32,12 +32,13 @@ define( 'PODS_DEPLOY_MIN_JSON_API_VERSION', '0.2' );
 define( 'PODS_DEPLOY_MIN_PODS_VERSION', '2.4.3' );
 
 
-global $pods_deploy_menu_page;
-
 /**
+ * Callback for adding Pods Deploy to menus.
  *
+ * Callback is in the activation function below.
+ *
+ * @since 0.3.0
  */
-add_filter( 'pods_admin_menu', 'pods_deploy_tools_menu' );
 function pods_deploy_tools_menu ( $admin_menus ) {
 
 	$admin_menus[ 'pods-deploy'] = array(
@@ -57,6 +58,9 @@ function pods_deploy_tools_menu ( $admin_menus ) {
 function pods_deploy_handler () {
 
 	if ( pods_v_sanitized( 'pods-deploy-submit', 'post') ) {
+		if ( ! pods_deploy_dependency_check() ) {
+			return;
+		}
 
 		$remote_url = pods_v_sanitized( 'remote-url', 'post', false, true );
 		$private_key = pods_v_sanitized( 'private-key', 'post' );
@@ -111,6 +115,24 @@ function pods_deploy_dependencies() {
  */
 add_action( 'plugins_loaded', 'pods_deploy_load_plugin' );
 function pods_deploy_load_plugin() {
+
+	if ( pods_deploy_dependency_check() ) {
+		include_once( PODS_DEPLOY_DIR . 'class-pods-deploy-auth.php' );
+		include_once( PODS_DEPLOY_DIR . 'class-pods-deploy.php' );
+		add_filter( 'pods_admin_menu', 'pods_deploy_tools_menu' );
+		add_action( 'init', 'pods_deploy_auth' );
+	}
+
+}
+
+/**
+ * Check for dependencies and versions.
+ *
+ * @since 0.3.0
+ *
+ * @return bool
+ */
+function pods_deploy_dependency_check() {
 	$fail = false;
 	foreach( pods_deploy_dependencies() as $dependency => $constant) {
 		if ( ! defined( $constant ) ){
@@ -119,32 +141,37 @@ function pods_deploy_load_plugin() {
 
 	}
 
-	if ( ! $fail && 1==9 ) {
-		if ( ! version_compare( PODS_JSON_API_VERSION, PODS_DEPLOY_MIN_JSON_API_VERSION ) <= 0 ) {
-			$fail[ ] = sprintf( 'Pods Deploy requires Pods JSON API version %1s or later.', PODS_DEPLOY_MIN_JSON_API_VERSION );
+	if ( is_array( $fail ) ) {
+		if ( version_compare( PODS_JSON_API_VERSION, PODS_DEPLOY_MIN_JSON_API_VERSION ) >= 0 ) {
+			$fail[] = sprintf( 'Pods Deploy requires Pods JSON API version %1s or later. Current version is %2s.', PODS_DEPLOY_MIN_JSON_API_VERSION, PODS_JSON_API_VERSION );
 		}
 
-		if ( ! version_compare( PODS_JSON_API_VERSION, PODS_DEPLOY_MIN_PODS_VERSION ) <= 0 ) {
-			$fail[] = sprintf( 'Pods Deploy requires Pods version %1s or later.', PODS_DEPLOY_MIN_PODS_VERSION );
+		if ( version_compare( PODS_JSON_API_VERSION, PODS_DEPLOY_MIN_PODS_VERSION ) >= 0 ) {
+			$fail[] = sprintf( 'Pods Deploy requires Pods version %1s or later. Current version is %2s.', PODS_DEPLOY_MIN_PODS_VERSION, PODS_VERSION );
+		}
+
+		if ( version_compare( PHP_VERSION, '5.3.0' ) <= 0 ) {
+			$fail[] = sprintf( 'Pods Deploy requires PHP version %1s or later. Current version is %2s.', '5.3.0', PHP_VERSION );
+
 		}
 
 	}
 
 	if ( is_array( $fail ) ) {
-		if ( ! is_admin() ) {
-			echo sprintf( '<div id="message" class="error"><p>%s</p></div>',
-				implode( $fail )
-			);
+
+		if (  is_admin() ) {
+			foreach ( $fail as $message ) {
+				echo sprintf( '<div id="message" class="error"><p>%s</p></div>',
+					$message
+				);
+			}
 		}
-	}
 
-	else {
-		include_once( PODS_DEPLOY_DIR . 'class-pods-deploy-auth.php' );
-		include_once( PODS_DEPLOY_DIR . 'class-pods-deploy.php' );
-
-		return true;
+		return false;
 
 	}
+
+	return true;
 
 }
 
@@ -181,7 +208,6 @@ function pods_deploy( $remote_url = false, $private_key, $public_key ) {
  *
  * @since 0.3.0
  */
-add_action( 'init', 'pods_deploy_auth' );
 function pods_deploy_auth() {
 	if ( get_option( Pods_Deploy_Auth::$allow_option_name, true ) ) {
 
