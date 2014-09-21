@@ -18,8 +18,8 @@ class Pods_Deploy_Auth {
 			return true;
 		}
 		else{
-			$info = var_dump( self::check_auth()  );
-			return new WP_Error( 'broke', __( "I've fallen and can't get up", "my_textdomain" ), $info );
+			$info = self::check_auth();
+			return new WP_Error( 'pods-deploy-key-auth-fail', __( 'Key auth failed.', "pods-deploy" ), $info );
 
 		}
 

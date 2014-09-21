@@ -35,6 +35,8 @@ class Pods_Deploy {
 		);
 
 		if ( ! is_wp_error( $response ) && 201 == wp_remote_retrieve_response_code( $response ) ) {
+			echo self::output_message( __( 'Package deployed successfully. ', 'pods-deploy' ), $url );
+
 			$responses = array();
 			$api = pods_api();
 			$params[ 'names' ] = true;
@@ -46,21 +48,37 @@ class Pods_Deploy {
 			foreach( $pod_names as $pod_name ) {
 				$url = $pods_api_url. "{$pod_name}/update_rel";
 				$url = Pods_Deploy_Auth::add_to_url( $public_key, $request_token, $url );
-				echo"{$url}\n";
-				$responses[] = wp_remote_post( $url, array (
+				$responses[] = $response = wp_remote_post( $url, array (
 						'method'      => 'POST',
 						'body'        => json_encode( $data ),
 					)
 				);
 
+				if ( ! is_wp_error( $response ) && 201 == wp_remote_retrieve_response_code( $response ) ) {
+					echo self::output_message(
+						__( sprintf( 'Relationships for the %1s Pod were updated.', $pod_name )
+						, 'pods-deploy' ),
+						$url
+					);
+				}
+				else {
+					echo self::output_message(
+						__( sprintf( 'Relationships for the %1s Pod were not updated.', $pod_name )
+							, 'pods-deploy' ),
+						$url
+					);
+
+					var_dump( $response );
+
+				}
+
 			}
 
-			echo 'Completed';
-
-			//@TODO reporting
+			echo self::output_message( __( 'Deployment complete :)', 'pods-deploy' ) );
 
 		}
 		else{
+			echo self::output_message( __( 'Package could not be deployed :(', 'pods-deploy' ) );
 			var_dump( $response );
 		}
 
@@ -199,6 +217,25 @@ class Pods_Deploy {
 
 			}
 
+		}
+
+	}
+
+	/**
+	 * Output a message during deployment, with the time in seconds message was generated.
+	 *
+	 * @param  string   $message Message to show.
+	 * @param string    $url Optional. The URL to show for message.
+	 *
+	 * @since 0.3.0
+	 *
+	 * @return string
+	 */
+	public static function output_message( $message, $url = '' ){
+		if ( is_string( $message ) ) {
+			$time = date( 's' );
+
+			return sprintf( '<div class="pods-deploy-message"><p>%1s</p> <span="pods-deploy-message-time">%2s</span>  <span="pods-deploy-message-url">%3s</span></div>', $message, $time, $url );
 		}
 
 	}
