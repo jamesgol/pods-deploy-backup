@@ -58,11 +58,24 @@ function pods_deploy_handler () {
 			pods_deploy( $remote_url, $private_key, $public_key );
 		}
 		else{
-			pods_error( var_dump( array($remote_url, $private_key, $public_key )));
+			pods_error( var_dump( array($remote_url, $private_key, $public_key ) ) );
 		}
 	}
+	elseif( pods_v_sanitized( 'pods-deploy-key-gen-submit', 'post' ) ) {
+		$activate = pods_v_sanitized( 'allow-deploy', 'post' );
+		if ( $activate ) {
+			Pods_Deploy_Auth::allow_deploy();
+			Pods_Deploy_Auth::generate_keys();
+			include 'ui/main.php';
+		}
+		else {
+			Pods_Deploy_Auth::revoke_keys();
+		}
+
+		include_once( 'ui/main.php' );
+	}
 	else {
-		include 'ui/main.php';
+		include_once( 'ui/main.php' );
 	}
 }
 
