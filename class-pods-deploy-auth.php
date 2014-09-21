@@ -100,6 +100,15 @@ class Pods_Deploy_Auth {
 		}
 	}
 
+	/**
+	 * Get public/private keys
+	 *
+	 * @param bool $remote Optional. If true, the default, gets saved keys for remote site to deploy to. If false get stored keys to use for deploying <em>to this site</em>.
+	 *
+	 * @since 0.0.3
+	 *
+	 * @return array
+	 */
 	public static function get_keys( $remote = true ) {
 		if ( $remote ) {
 			return array(
@@ -116,6 +125,11 @@ class Pods_Deploy_Auth {
 
 	}
 
+	/**
+	 * Generate public/private keys
+	 *
+	 * @since 0.3.0
+	 */
 	public static function generate_keys() {
 
 		update_option( self::$public_key_option_name, self::generate_public_key() );
@@ -123,13 +137,28 @@ class Pods_Deploy_Auth {
 
 	}
 
-	public static function save_local_keys( $key, $token ) {
+	/**
+	 * Save keys used for deployment.
+	 *
+	 * @param string $key
+	 * @param string $private
+	 *
+	 * @since 0.3.0
+	 */
+	public static function save_local_keys( $key, $private ) {
 
 		update_option( self::$public_key_option_name . '_local', $key );
-		update_option( self::$private_key_option_name . '_local', $token );
+		update_option( self::$private_key_option_name . '_local', $private );
 
 	}
 
+	/**
+	 * Generates a public key
+	 *
+	 * @since 0.3.0
+	 *
+	 * @return string
+	 */
 	private static function generate_public_key() {
 		$auth_key = defined( 'AUTH_KEY' ) ? AUTH_KEY : '';
 		$public   = hash( 'md5', self::random_string() . $auth_key . date( 'U' ) );
@@ -139,6 +168,13 @@ class Pods_Deploy_Auth {
 
 	}
 
+	/**
+	 * Generates a public key
+	 *
+	 * @since 0.3.0
+	 *
+	 * @return string
+	 */
 	private static function generate_private_key( ) {
 		$auth_key = defined( 'AUTH_KEY' ) ? AUTH_KEY : '';
 		$secret   = hash( 'md5', get_current_user_id() . $auth_key . date( 'U' ) );
@@ -147,6 +183,13 @@ class Pods_Deploy_Auth {
 
 	}
 
+	/**
+	 * Generates a private key
+	 *
+	 * @since 0.3.0
+	 *
+	 * @return string
+	 */
 	public static function generate_token( $public, $private ) {
 
 		return hash( 'md5', $public, $private );
@@ -158,6 +201,17 @@ class Pods_Deploy_Auth {
 
 	}
 
+	/**
+	 * Add <strong>public key</strong> and token to url string
+	 *
+	 * @param $key
+	 * @param $token
+	 * @param $url
+	 *
+	 * @since 0.3.0
+	 *
+	 * @return string
+	 */
 	public static function add_to_url( $key, $token, $url ) {
 		$args = array(
 			'pods-deploy-key' => urlencode( $key ),
@@ -168,12 +222,26 @@ class Pods_Deploy_Auth {
 
 	}
 
+	/**
+	 * Toggle deployments to this site on or off
+	 *
+	 * NOTE: Does not generate or revoke keys.
+	 *
+	 * @param bool $allow Optional. If true deployments are allowed. If false they will not be.
+	 *
+	 * @since 0.3.0
+	 */
 	public static function allow_deploy( $allow = true ) {
 
 		update_option( self::$allow_option_name, $allow );
 
 	}
 
+	/**
+	 * Revokes keys and toggles deployment off for this site.
+	 *
+	 * @since 0.3.0
+	 */
 	public static function revoke_keys() {
 
 		delete_option( self::$public_key_option_name );
@@ -182,6 +250,13 @@ class Pods_Deploy_Auth {
 
 	}
 
+	/**
+	 * Checks if deployment is currently allowed for this site.
+	 *
+	 * @since 0.3.0
+	 *        
+	 * @return bool
+	 */
 	public static function deploy_active() {
 
 		if ( get_option( self::$allow_option_name ) ) {
