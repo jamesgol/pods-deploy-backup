@@ -1,11 +1,13 @@
 <?php
 
 class Pods_Deploy {
-	public static $remote_url;
+
+	public static $elapsed_time;
 
 	public static function deploy( $remote_url, $public_key, $private_key ) {
+		$fail = false;
 
-		self::$remote_url = $remote_url;
+		self::$elapsed_time = microtime( true );
 
 		if ( ! class_exists(  'Pods_Migrate_Packages' ) ) {
 			return new WP_Error( 'pods-deploy-need-packages',  __( 'You must activate the Packages Component on both the site sending and receiving this package.', 'pods-deploy' ) );
@@ -34,7 +36,7 @@ class Pods_Deploy {
 			)
 		);
 
-		if ( ! is_wp_error( $response ) && 201 == wp_remote_retrieve_response_code( $response ) ) {
+		if ( self::check_return( $response ) ) {
 			echo self::output_message( __( 'Package deployed successfully. ', 'pods-deploy' ), $url );
 
 			$responses = array();
@@ -54,7 +56,7 @@ class Pods_Deploy {
 					)
 				);
 
-				if ( ! is_wp_error( $response ) && 201 == wp_remote_retrieve_response_code( $response ) ) {
+				if ( self::check_return( $response ) ) {
 					echo self::output_message(
 						__( sprintf( 'Relationships for the %1s Pod were updated.', $pod_name )
 						, 'pods-deploy' ),
@@ -62,6 +64,7 @@ class Pods_Deploy {
 					);
 				}
 				else {
+					$fail = true;
 					echo self::output_message(
 						__( sprintf( 'Relationships for the %1s Pod were not updated.', $pod_name )
 							, 'pods-deploy' ),
@@ -74,7 +77,12 @@ class Pods_Deploy {
 
 			}
 
-			echo self::output_message( __( 'Deployment complete :)', 'pods-deploy' ) );
+			if ( ! $fail ) {
+				echo self::output_message( __( 'Deployment complete :)', 'pods-deploy' ) );
+			}
+			else {
+				echo self::output_message( __( 'Deployment completed with mixed results :|', 'pods-deploy' ) );
+			}
 
 		}
 		else{
@@ -222,7 +230,7 @@ class Pods_Deploy {
 	}
 
 	/**
-	 * Output a message during deployment, with the time in seconds message was generated.
+	 * Output a message during deployment, with the time elpased since deploy started.
 	 *
 	 * @param  string   $message Message to show.
 	 * @param string    $url Optional. The URL to show for message.
@@ -233,9 +241,52 @@ class Pods_Deploy {
 	 */
 	public static function output_message( $message, $url = '' ){
 		if ( is_string( $message ) ) {
-			$time = date( 's' );
+			$time = self::elapsed_time();
 
-			return sprintf( '<div class="pods-deploy-message"><p>%1s</p> <span="pods-deploy-message-time">%2s</span>  <span="pods-deploy-message-url">%3s</span></div>', $message, $time, $url );
+			return sprintf( '<div class="pods-deploy-message"><p>%1s</p> <span="pods-deploy-message-time">Elapsed time: %2s</span>  <span="pods-deploy-message-url">%3s</span></div>', $message, $time, $url );
+		}
+
+	}
+
+	/**
+	 * Calculate elapsed time since process began.
+	 *
+	 * @param bool $return_formatted
+	 *
+	 * @since 0.3.0
+	 *
+	 * @return int
+	 */
+	private static function elapsed_time( $return_formatted = true ) {
+		$time_end = microtime( true );
+		$time = $time_end - self::$elapsed_time;
+		if ( $return_formatted ) {
+			$hours = (int) ( $time/60/60);
+			$minutes = (int)( $time/60)-$hours*60;
+			$seconds = (int) $time-$hours*60*60-$minutes*60;
+		}
+
+		return $seconds;
+
+	}
+
+	/**
+	 * Check if HTTP request response is valid.
+	 *
+	 * @param      $response The response.
+	 * @param bool|array $allowed_codes Optional. An array of allowed response codes. If false, the default, response code 200 and 201 are allowed.
+	 *
+	 * @since 0.3.0
+	 *
+	 * @return bool
+	 */
+	private static function check_return( $response, $allowed_codes = false ) {
+		if ( ! is_array( $allowed_codes )  ) {
+			$allowed_codes = array( 200, 201 );
+		}
+
+		if ( ! is_wp_error( $response ) && in_array( wp_remote_retrieve_response_code( $response ), $allowed_codes ) ) {
+			return true;
 		}
 
 	}
