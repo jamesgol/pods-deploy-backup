@@ -193,13 +193,11 @@ function pods_deploy_dependency_check() {
  */
 function pods_deploy( $params ) {
 
-	if ( ! is_null( pods_v( 'remote_url', $params ) ) {
-		$params[ 'remote_url' ] = get_option( 'pods_deploy_remote_url' );
-	}
+	$params[ 'remote_url' ] = pods_v( 'remote_url', $params );
+    $params[ 'public_key' ] = pods_v( 'public_key', $params );
+    $params[ 'private_key' ] = pods_v( 'private_key', $params );
 
-
-
-	return Pods_Deploy::deploy( $params );
+    return Pods_Deploy::deploy( $params );
 
 }
 
