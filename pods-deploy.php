@@ -142,11 +142,11 @@ function pods_deploy_dependency_check() {
 	}
 
 	if ( ! is_array( $fail ) ) {
-		if ( version_compare( PODS_JSON_API_VERSION, PODS_DEPLOY_MIN_JSON_API_VERSION ) >= 0 ) {
+		if ( ! version_compare( PODS_JSON_API_VERSION, PODS_DEPLOY_MIN_JSON_API_VERSION ) <= 0 ) {
 			$fail[] = sprintf( 'Pods Deploy requires Pods JSON API version %1s or later. Current version is %2s.', PODS_DEPLOY_MIN_JSON_API_VERSION, PODS_JSON_API_VERSION );
 		}
 
-		if ( version_compare( PODS_JSON_API_VERSION, PODS_DEPLOY_MIN_PODS_VERSION ) >= 0 ) {
+		if ( ! version_compare( PODS_VERSION, PODS_DEPLOY_MIN_PODS_VERSION ) <= 0 ) {
 			$fail[] = sprintf( 'Pods Deploy requires Pods version %1s or later. Current version is %2s.', PODS_DEPLOY_MIN_PODS_VERSION, PODS_VERSION );
 		}
 
