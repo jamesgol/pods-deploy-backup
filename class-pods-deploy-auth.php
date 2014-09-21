@@ -2,23 +2,44 @@
 class Pods_Deploy_Auth {
 	public static $public_key_option_name = 'pods_deploy_public_key';
 	public static $private_key_option_name = 'pods_deploy_private_key';
+	public static  $allow_option_name = 'pods_deploy_allow_deploy';
 
+	/**
+	 * Allows access to the needed end points if key auth matches
+	 *
+	 * @since 0.0.3
+	 *
+	 * @return bool|WP_Error
+	 */
 	public static function allow_access() {
-		if ( self::check_auth() ) {
+		if ( true == self::check_auth() ) {
 			add_filter( 'pods_json_api_access_components_package', '__return_true' );
 			add_filter( 'pods_json_api_access_api_update_rel', '__return_true' );
+			return true;
+		}
+		else{
+			$info = var_dump( self::check_auth()  );
+			return new WP_Error( 'broke', __( "I've fallen and can't get up", "my_textdomain" ), $info );
+
 		}
 
 	}
 
+	/**
+	 * Checks if key auth is legit
+	 *
+	 * @since 0.0.3
+	 *
+	 * @return bool
+	 */
 	public static function check_auth() {
-		return true;
+
 		$token = self::get_request_token();
 		$public  =  self::get_request_key();
 		if ( $public  && $token ) {
-			$token  = urldecode( 'token' );
-			$secret = self::generate_private_key();
-			if ( hash( 'md5', $secret . $public ) === $token ) {
+
+			$private = pods_v( 'private', self::get_keys() );
+			if ( $private && hash( 'md5', $public, $private ) === $token ) {
 
 				return true;
 
@@ -26,30 +47,72 @@ class Pods_Deploy_Auth {
 
 		}
 
+
 	}
 
+	/**
+	 * Gets token from current request
+	 *
+	 * @since 0.0.3
+	 *
+	 * @return string
+	 */
 	private static function get_request_token() {
-		if ( pods_v( 'pods-deploy-token', $_SERVER ) ) {
-			return urldecode( pods_v( 'HTTP_X_PODS_DEPLOY_TOKEN', $_SERVER ) );
+
+		if ( ! is_null( $token = pods_v( 'pods-deploy-token', self::query_string() ) ) ) {
+
+			return urldecode( $token  );
+
 		}
 
 	}
 
+	/**
+	 * Gets public key from current request
+	 *
+	 * @since 0.0.3
+	 *
+	 * @return string
+	 */
 	private static function get_request_key() {
 
-		if ( pods_v( 'pods-deploy-key', $_SERVER ) ) {
-			return urldecode( pods_v( 'HTTP_X_PODS_DEPLOY_KEY', $_SERVER ) );
+		if ( ! is_null( $key = pods_v( 'pods-deploy-key', self::query_string() ) ) ) {
+
+			return urldecode( $key );
+
 		}
 
 	}
 
+	/**
+	 * Parses query string from current request
+	 *
+	 * @since 0.0.3
+	 *
+	 * @return array
+	 */
+	private static function query_string() {
 
-	public static function get_keys() {
+		$query = pods_v_sanitized( 'QUERY_STRING', $_SERVER );
+
+		if ( $query ) {
+			return wp_parse_args( $query );
+		}
+	}
+
+	public static function get_keys( $remote = true ) {
+		if ( $remote ) {
+			return array(
+				'public' => get_option( self::$public_key_option_name ),
+				'private' => get_option( self::$private_key_option_name ),
+			);
+		}
 
 		return array(
-			'public' => get_option( self::$public_key_option_name ),
-			'private' => get_option( self::$private_key_option_name ),
+			'public' => get_option( self::$public_key_option_name . '_local' ),
+			'private' => get_option( self::$private_key_option_name . '_local' ),
 		);
+
 
 	}
 
@@ -57,6 +120,13 @@ class Pods_Deploy_Auth {
 
 		update_option( self::$public_key_option_name, self::generate_public_key() );
 		update_option( self::$private_key_option_name, self::generate_private_key() );
+
+	}
+
+	public static function save_local_keys( $key, $token ) {
+
+		update_option( self::$public_key_option_name . '_local', $key );
+		update_option( self::$private_key_option_name . '_local', $token );
 
 	}
 
@@ -77,20 +147,17 @@ class Pods_Deploy_Auth {
 
 	}
 
-	private static function generate_token() {
-		$public = pods_v( 'public', self::get_keys() );
-		$private = pods_v( 'private', self::get_keys() );
+	public static function generate_token( $public, $private ) {
 
-		if ( $public && $private ) {
-			return hash( 'md5', $public, $private );
-		}
+		return hash( 'md5', $public, $private );
+
 	}
 
 	private static function random_string() {
 		return substr( str_shuffle( '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ' ), 0, 42);
 
 	}
-	
+
 	public static function add_to_url( $key, $token, $url ) {
 		$args = array(
 			'pods-deploy-key' => urlencode( $key ),
@@ -100,6 +167,22 @@ class Pods_Deploy_Auth {
 		return add_query_arg( $args, $url );
 
 	}
+
+	public static function allow_deploy( $allow = true ) {
+
+		update_option( self::$allow_option_name, $allow );
+
+	}
+
+	public static function revoke_keys() {
+
+		delete_option( self::$public_key_option_name );
+		delete_option( self::$private_key_option_name );
+		self::allow_deploy( false );
+
+	}
+
+
 
 
 

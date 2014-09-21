@@ -3,7 +3,7 @@
 class Pods_Deploy {
 	public static $remote_url;
 
-	public static function deploy( $remote_url, $request_key, $request_token ) {
+	public static function deploy( $remote_url, $public_key, $private_key ) {
 
 		self::$remote_url = $remote_url;
 
@@ -22,7 +22,9 @@ class Pods_Deploy {
 
 		$url = trailingslashit( $remote_url ) . 'pods-components?package';
 
-		$url = Pods_Deploy_Auth::add_to_url( $request_key, $request_token, $url );
+		$request_token = Pods_Deploy_Auth::generate_token( $public_key, $private_key );
+
+		$url = Pods_Deploy_Auth::add_to_url( $public_key, $request_token, $url );
 
 		$data = json_encode( $data );
 
@@ -43,7 +45,7 @@ class Pods_Deploy {
 
 			foreach( $pod_names as $pod_name ) {
 				$url = $pods_api_url. "{$pod_name}/update_rel";
-				$url = Pods_Deploy_Auth::add_to_url( $request_key, $request_token, $url );
+				$url = Pods_Deploy_Auth::add_to_url( $public_key, $request_token, $url );
 				echo"{$url}\n";
 				$responses[] = wp_remote_post( $url, array (
 						'method'      => 'POST',
@@ -59,7 +61,7 @@ class Pods_Deploy {
 
 		}
 		else{
-			//@TODO reporting
+			var_dump( $response );
 		}
 
 

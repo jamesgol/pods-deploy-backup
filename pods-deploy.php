@@ -50,15 +50,15 @@ function pods_deploy_handler () {
 	if ( pods_v_sanitized( 'pods-deploy-submit', 'post') ) {
 
 		$remote_url = pods_v_sanitized( 'remote-url', 'post', false, true );
-		$request_key = pods_v_sanitized( 'request-key', 'post' );
-		$request_token = pods_v_sanitized( 'request-token', 'post' );
-		if ( $remote_url && $request_token && $request_key ) {
+		$private_key = pods_v_sanitized( 'private-key', 'post' );
+		$public_key = pods_v_sanitized( 'public-key', 'post' );
+		if ( $remote_url && $private_key && $public_key ) {
+			Pods_Deploy_Auth::save_local_keys( $private_key, $public_key );
 
-
-			pods_deploy( $remote_url, $request_key, $request_token );
+			pods_deploy( $remote_url, $private_key, $public_key );
 		}
 		else{
-			pods_error( var_dump( array($remote_url, $request_key, $request_token )));
+			pods_error( var_dump( array($remote_url, $private_key, $public_key )));
 		}
 	}
 	else {
@@ -121,7 +121,7 @@ function pods_deploy_load_plugin() {
  *
  * @param $remote_url
  */
-function pods_deploy( $remote_url = false, $request_key, $request_token ) {
+function pods_deploy( $remote_url = false, $private_key, $public_key ) {
 
 	if ( ! $remote_url  ) {
 		$remote_url = get_option( 'pods_deploy_remote_url' );
@@ -136,7 +136,7 @@ function pods_deploy( $remote_url = false, $request_key, $request_token ) {
 
 	}
 
-	return Pods_Deploy::deploy( $remote_url, $request_key, $request_token );
+	return Pods_Deploy::deploy( $remote_url, $private_key, $public_key );
 
 }
 
@@ -147,8 +147,7 @@ function pods_deploy( $remote_url = false, $request_key, $request_token ) {
  */
 add_action( 'init', 'pods_deploy_auth' );
 function pods_deploy_auth() {
-	//if ( pods_v( 'HTTP_X_PODS_DEPLOY_TOKEN', $_SERVER ) && get_option( 'pods_deploy_allow_deploy', false ) ) {
-	if ( 1==1 ) {
+	if ( get_option( Pods_Deploy_Auth::$allow_option_name, true ) ) {
 
 		include_once( PODS_DEPLOY_DIR . 'class-pods-deploy-auth.php' );
 		
