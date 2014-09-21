@@ -7,9 +7,10 @@
 		</h2>
 		<?php
 			$form = Pods_Form();
+			$fields[] =  $form::field( '_wpnonce', wp_create_nonce( 'pods-deploy' ), 'hidden' );
 
 			foreach( $form_fields as $name => $field ) {
-					$name = pods_v( 'name', $field );
+
 					$fields[] = '<li>';
 					$fields[] = $form::label(
 						$name,

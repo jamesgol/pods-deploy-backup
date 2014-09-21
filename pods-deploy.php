@@ -62,6 +62,10 @@ function pods_deploy_handler () {
 			return;
 		}
 
+		if ( ! ( $nonce = pods_v_sanitized( '_wpnonce', $_REQUEST ) ) || ! wp_verify_nonce( $nonce, 'pods-deploy' ) ) {
+			pods_error( __( 'Bad nonce.', 'pods-deploy' ) );
+		}
+
 		$remote_url = pods_v_sanitized( 'remote-url', 'post', false, true );
 		$private_key = pods_v_sanitized( 'private-key', 'post' );
 		$public_key = pods_v_sanitized( 'public-key', 'post' );
