@@ -136,6 +136,7 @@ function pods_deploy_load_plugin() {
 
 	if ( pods_deploy_dependency_check() ) {
 		include_once( PODS_DEPLOY_DIR . 'class-pods-deploy-auth.php' );
+		include_once( PODS_DEPLOY_DIR . 'class-pods-deploy-ui.php' );
 		include_once( PODS_DEPLOY_DIR . 'class-pods-deploy.php' );
 		add_filter( 'pods_admin_menu', 'pods_deploy_tools_menu' );
 		add_action( 'init', 'pods_deploy_auth' );
