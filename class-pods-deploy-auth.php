@@ -29,7 +29,7 @@ class Pods_Deploy_Auth {
 	}
 
 	private static function get_request_token() {
-		if ( pods_v( 'HTTP_PODS_DEPLOY_TOKEN', $_SERVER ) ) {
+		if ( pods_v( 'pods-deploy-token', $_SERVER ) ) {
 			return urldecode( pods_v( 'HTTP_X_PODS_DEPLOY_TOKEN', $_SERVER ) );
 		}
 
@@ -37,7 +37,7 @@ class Pods_Deploy_Auth {
 
 	private static function get_request_key() {
 
-		if ( pods_v( 'HTTP_PODS_DEPLOY_KEY', $_SERVER ) ) {
+		if ( pods_v( 'pods-deploy-key', $_SERVER ) ) {
 			return urldecode( pods_v( 'HTTP_X_PODS_DEPLOY_KEY', $_SERVER ) );
 		}
 
@@ -88,6 +88,16 @@ class Pods_Deploy_Auth {
 
 	private static function random_string() {
 		return substr( str_shuffle( '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ' ), 0, 42);
+
+	}
+	
+	public static function add_to_url( $key, $token, $url ) {
+		$args = array(
+			'pods-deploy-key' => urlencode( $key ),
+			'pods-deploy-token' => urlencode( $token ),
+		);
+
+		return add_query_arg( $args, $url );
 
 	}
 

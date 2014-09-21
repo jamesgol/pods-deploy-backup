@@ -7,8 +7,6 @@ class Pods_Deploy {
 
 		self::$remote_url = $remote_url;
 
-		$headers = self::headers( $request_key, $request_token );
-
 		if ( ! class_exists(  'Pods_Migrate_Packages' ) ) {
 			return new WP_Error( 'pods-deploy-need-packages',  __( 'You must activate the Packages Component on both the site sending and receiving this package.', 'pods-deploy' ) );
 		}
@@ -22,14 +20,14 @@ class Pods_Deploy {
 		);
 		$data = Pods_Migrate_Packages::export( $params );
 
-
 		$url = trailingslashit( $remote_url ) . 'pods-components?package';
+
+		$url = Pods_Deploy_Auth::add_to_url( $request_key, $request_token, $url );
 
 		$data = json_encode( $data );
 
 		$response = wp_remote_post( $url, array (
 				'method'    => 'POST',
-				'headers'   => $headers,
 				'body'      => $data,
 			)
 		);
@@ -45,10 +43,10 @@ class Pods_Deploy {
 
 			foreach( $pod_names as $pod_name ) {
 				$url = $pods_api_url. "{$pod_name}/update_rel";
+				$url = Pods_Deploy_Auth::add_to_url( $request_key, $request_token, $url );
 				echo"{$url}\n";
 				$responses[] = wp_remote_post( $url, array (
 						'method'      => 'POST',
-						'headers'     => $headers,
 						'body'        => json_encode( $data ),
 					)
 				);
@@ -201,24 +199,6 @@ class Pods_Deploy {
 
 		}
 
-	}
-
-	/**
-	 * Headers for requests
-	 *
-	 * @since 0.1.0
-	 *
-	 * @return array
-	 */
-	public static function headers( $key, $token ) {
-		$headers    = array (
-			'pods_deploy_key' => $key,
-			'pods_deploy_token' => $token,
-		);
-
-		//$headers = json_encode( $headers );
-
-		return $headers;
 	}
 
 } 
