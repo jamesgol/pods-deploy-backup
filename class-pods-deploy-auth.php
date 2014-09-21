@@ -182,6 +182,15 @@ class Pods_Deploy_Auth {
 
 	}
 
+	public static function deploy_active() {
+
+		if ( get_option( self::$allow_option_name ) ) {
+
+			return true;
+
+		}
+	}
+
 
 
 

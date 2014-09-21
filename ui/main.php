@@ -1,32 +1,64 @@
 <?php
-	$keys = Pods_Deploy_Auth::get_keys();
-	$public = pods_v_sanitized( 'public', $keys, '' );
-	$private = pods_v_sanitized( 'private', $keys, '' );
+	$keys = Pods_Deploy_Auth::get_keys( false );
+	$public_local = pods_v_sanitized( 'public', $keys, '' );
+	$private_local = pods_v_sanitized( 'private', $keys, '' );
+	$keys = Pods_Deploy_Auth::get_keys( true );
+	$public_remote = pods_v_sanitized( 'public', $keys, '' );
+	$private_remote = pods_v_sanitized( 'private', $keys, '' );
+	$deploy_active = Pods_Deploy_Auth::deploy_active();
+	if ( $deploy_active ) {
+		$key_gen_submit = __( 'Disable Deployments', 'pods-deploy' );
+		$key_gen_header = __( 'Click to revoke keys and prevent deployments to this site.', 'pods-deploy' );
+
+	}
+	else{
+		$key_gen_submit = __( 'Allow Deployments', 'pods-deploy' );
+		$key_gen_header = __( 'Click to generate new keys and allow deployments to this site', 'pods-deploy' );
+	}
+
 ?>
-<div class="wrap pods-deploy-admin">
-	<form action="?page=pods-deploy" method="post">
+<div class="wrap pods-admin">
+	<form action="" method="post">
 
-		<div id="icon-tools" class="icon32"><br></div>
-		<h2>Pods Deploy</h2>
+		<div id="icon-pods" class="icon32"><br /></div>
 
-		<p>
-			<label for="remote-url">Remote URL:</label>
-			<input type="text" class="" name="remote-url" id="remote-url" value="">
-		</p>
+		<?php
+		$default = 'deploy';
 
-		<p>
-			<label for="request-key">public-key</label>
-			<input type="text" class="" name="request-key" id="request-key" value="<?php echo $public; ?>">
-		</p>
+		$tabs = array(
+			'deploy' => __( 'Deploy From This Site', 'pods-deploy' ),
+			'key-gen' => __( 'Allow Deploying To This Site', 'pods' )
+		);
+		?>
 
-		<p>
-			<label for="request-token">request-token:</label>
-			<input type="text" class="" name="request-token" id="request-token" value="<?php echo $private; ?>">
-		</p>
+		<h2 class="nav-tab-wrapper">
+			<?php
+			foreach ( $tabs as $tab => $label ) {
+				$class = '';
 
+				if ( $tab == pods_v( 'tab', 'get', $default ) ) {
+					$class = ' nav-tab-active';
 
-		<p class="submit">
-			<input type="submit" class="button button-primary" name="pods-deploy-submit" value="Deploy">
-		</p>
+					$label = 'Pods ' . $label;
+				}
+
+				$url = pods_query_arg( array( 'tab' => $tab ), array( 'page' ) );
+				?>
+				<a href="<?php echo $url; ?>" class="nav-tab<?php echo $class; ?>">
+					<?php echo $label; ?>
+				</a>
+			<?php
+			}
+			?>
+		</h2>
+		<img src="<?php echo PODS_URL; ?>ui/images/pods-logo-notext-rgb-transparent.png" class="pods-leaf-watermark-right" />
+
+		<?php
+		$tab = pods_v( 'tab', 'get', $default );
+		$tab = sanitize_title( $tab );
+
+		$data = compact( array( 'keys', 'public_local', 'private_local', 'public_remote', 'private_remote', 'deploy_active', 'key_gen_submit', 'key_gen_header' ) );
+		echo pods_view( PODS_DEPLOY_DIR . 'ui/' . $tab . '.php', $data );
+		?>
 	</form>
 </div>
