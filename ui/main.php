@@ -27,7 +27,7 @@
 
 		$tabs = array(
 			'deploy' => __( 'Deploy From This Site', 'pods-deploy' ),
-			'key-gen' => __( 'Allow Deploying To This Site', 'pods' )
+			'key-gen' => __( 'Allow Deploying To This Site', 'pods-deploy' )
 		);
 		?>
 
@@ -39,7 +39,7 @@
 				if ( $tab == pods_v( 'tab', 'get', $default ) ) {
 					$class = ' nav-tab-active';
 
-					$label = 'Pods ' . $label;
+					$label = $label;
 				}
 
 				$url = pods_query_arg( array( 'tab' => $tab ), array( 'page' ) );

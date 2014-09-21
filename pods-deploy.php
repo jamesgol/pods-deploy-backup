@@ -37,11 +37,18 @@ global $pods_deploy_menu_page;
 /**
  *
  */
-add_action( 'admin_menu', 'pods_deploy_tools_menu' );
-function pods_deploy_tools_menu () {
-	global $pods_deploy_menu_page;
+add_filter( 'pods_admin_menu', 'pods_deploy_tools_menu' );
+function pods_deploy_tools_menu ( $admin_menus ) {
 
-	$pods_deploy_menu_page = add_management_page( 'Pods Deploy', 'Pods Deploy', 'manage_options', 'pods-deploy', 'pods_deploy_handler' );
+	$admin_menus[ 'pods-deploy'] = array(
+		'label' => __( 'Pods Deploy', 'pods-deploy' ),
+		'function' => 'pods_deploy_handler',
+		'access' => 'manage_options'
+
+	);
+
+	return $admin_menus;
+
 }
 
 /**
