@@ -1,0 +1,46 @@
+{
+    "name": "pods-framework/pods-deploy",
+    "description": "Deploys Pods configuration to a remote site. Copies Pods setup, Pods Template, Pods Pages and Pods Helpers via the WordPress REST API.",
+    "type": "wordpress-plugin",
+    "keywords": ["pods", "wordpress", "wp-api", "api"],
+    "homepage": "https://github.com/pods-framework/pods-deploy",
+    "license": "GPL-2.0",
+    "authors": [
+        {
+            "name": "Josh Pollock",
+            "email": "Josh@Pods.io",
+            "homepage": "http://JoshPress.net",
+            "role" : "Lead Developer"
+        },
+        {
+            "name": "Phil Lewis",
+            "email": "Phil@Pods.io",
+            "role" : "Developer"
+        },
+        {
+            "name": "Pods Framework Team",
+            "email": "contact@pods.io",
+            "homepage": "http://pods.io/"
+        }
+    ],
+    "repositories": [
+        {
+            "type": "composer",
+            "url" : "http://wpackagist.org"
+        },
+        {
+            "type": "git",
+            "url": "https://github.com/pods-framework/pods-json-api"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/pods-framework/pods-deploy/issues",
+        "source": "https://github.com/pods-framework/pods-deploy"
+    },
+    "require": {
+        "php": ">=5.3",
+        "composer/installers": "~1.0",
+        "wpackagist-plugin/pods": ">=2.4.3",
+        "pods-framework/pods-json-api": ">=0.2"
+    }
+}
