@@ -72,7 +72,7 @@ class Pods_Deploy_UI {
 					}
 
 				}
-				
+
 				pods_deploy( $params );
 
 			}

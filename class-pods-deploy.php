@@ -9,7 +9,7 @@ class Pods_Deploy {
 		$public_key = pods_v( 'public_key', $deploy_params );
 		$private_key = pods_v( 'private_key', $deploy_params );
 		$timeout = pods_v( 'timeout', $deploy_params, 60 );
-
+		
 		if ( is_null( $pod_names = pods_v( 'pods', $deploy_params ) ) ) {
 			$pod_names = $GLOBALS[ 'Pods_Deploy_UI' ]->pod_names();
 		}
@@ -20,6 +20,8 @@ class Pods_Deploy {
 			return false;
 			
 		}
+
+		self::do_deploy_components( pods_v( 'components', $deploy_params ), $timeout, $remote_url );
 
 		$fail = false;
 
@@ -145,7 +147,36 @@ class Pods_Deploy {
 			}
 
 		}
+
 		return $fail;
+
+	}
+
+	private static function do_deploy_components( $components = null, $timeout, $remote_url ) {
+
+		if ( is_null( $components ) ) {
+			$components = array( 'migrate-packages' );
+		}
+
+		$components = array( 'activate' => $components );
+
+		$url = trailingslashit( $remote_url ) . 'pods-components?activate_components';
+		$response = wp_remote_post( $url, array (
+				'method'    => 'PUT',
+
+				'body'      => json_encode( $components )
+			)
+		);
+
+		if ( self::check_return( $response ) ) {
+			self::output_message( __( 'Successfully activated components.', 'pods-deploy' ), $url );
+		}
+		else {
+			self::output_message( __( 'Component activation failed.', 'pods-deploy' ), $url );
+			var_dump( $response );
+		}
+
+		return $response;
 
 	}
 
