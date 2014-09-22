@@ -51,12 +51,28 @@ class Pods_Deploy_UI {
 
 				);
 
-				foreach( $this->pod_names() as $name => $label ) {
-					if ( pods_v_sanitized( $name, 'POST' ) ) {
-						$params[ 'pods' ][] = $name;
+				$pod_names = $this->pod_names();
+				if ( is_array( $pod_names ) ) {
+					foreach ( $pod_names as $name => $label ) {
+						if ( pods_v_sanitized( $name, 'POST' ) ) {
+							$params[ 'pods' ][ ] = $name;
+						}
+
 					}
+
 				}
 
+				$params[ 'components' ] = array( 'migrate-packages' );
+				$components = $this->active_components();
+				if ( is_array( $components ) ) {
+					foreach (  $components as $name => $label  ) {
+						if ( pods_v_sanitized( $name, 'POST' ) ) {
+							$params[ 'components' ][ ] = $name;
+						}
+					}
+
+				}
+				
 				pods_deploy( $params );
 
 			}
@@ -87,6 +103,8 @@ class Pods_Deploy_UI {
 	/**
 	 * Output a list of field names.
 	 *
+	 * @since 0.4.0
+	 *
 	 * @return array|mixed
 	 */
 	function pod_names() {
@@ -95,6 +113,35 @@ class Pods_Deploy_UI {
 		$pod_names = $api->load_pods( $params );
 
 		return $pod_names;
+
+	}
+
+	/**
+	 * Get an array of active components
+	 *
+	 * @since 0.4.0
+	 *
+	 * @return array|void
+	 */
+	function active_components() {
+		$components = new PodsComponents();
+		$components = $components->get_components();
+		$component_names = $components = wp_list_pluck( $components, 'Name'  );
+		$active_components = get_option( 'pods_component_settings' );
+		$active_components =  json_decode( $active_components );
+		$active_components = pods_v( 'components', $active_components );
+		$active_components =  array_keys( (array) $active_components );
+
+		foreach( $active_components as $component ) {
+			if ( ! is_null( pods_v( $component,$component_names ) ) ) {
+
+				$the_active_components[ $component ] = $component_names[ $component ];
+
+			}
+
+		}
+
+		return $the_active_components;
 
 	}
 
@@ -137,11 +184,24 @@ class Pods_Deploy_UI {
 
 		$pod_names = $this->pod_names();
 
-		foreach( $pod_names as $name => $label ) {
-			$form_fields[ $name ] = array(
-				'label' => $label,
-				'type' => 'boolean',
-			);
+		if ( is_array( $pod_names ) ) {
+			foreach ( $pod_names as $name => $label ) {
+				$form_fields[ $name ] = array (
+					'label' => $label,
+					'type'  => 'boolean',
+				);
+			}
+		}
+
+		$active_components = $this->active_components();
+
+		if ( is_array( $active_components ) ) {
+			foreach( $active_components as $name => $label ) {
+				$form_fields[ $name ] = array (
+					'label' => $label,
+					'type'  => 'boolean',
+				);
+			}
 		}
 
 		return $form_fields;
