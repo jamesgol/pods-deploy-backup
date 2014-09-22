@@ -41,6 +41,7 @@ class Pods_Deploy_UI {
 			$remote_url = pods_v_sanitized( 'remote-url', 'post', false, true );
 			$private_key = pods_v_sanitized( 'private-key', 'post' );
 			$public_key = pods_v_sanitized( 'public-key', 'post' );
+			$pods = pods_v_sanitized( 'pods', 'post' );
 			if ( $remote_url && $private_key && $public_key ) {
 				Pods_Deploy_Auth::save_local_keys( $private_key, $public_key );
 
@@ -48,10 +49,10 @@ class Pods_Deploy_UI {
 					'remote_url' => $remote_url,
 					'private_key' => $private_key,
 					'public_key' => $public_key,
-
+					'pods'       => $pods,
 				);
 
-				$pod_names = $this->pod_names();
+/*				$pod_names = $this->pod_names();
 				if ( is_array( $pod_names ) ) {
 					foreach ( $pod_names as $name => $label ) {
 						if ( pods_v_sanitized( $name, 'POST' ) ) {
@@ -60,7 +61,7 @@ class Pods_Deploy_UI {
 
 					}
 
-				}
+				} */
 
 				$params[ 'components' ] = array( 'migrate-packages' );
 				$components = $this->active_components();
@@ -78,6 +79,7 @@ class Pods_Deploy_UI {
 			}
 			else{
 				_e( 'Keys and URL for remote site not set', 'pods-deploy' );
+
 				pods_error( var_dump( array($remote_url, $private_key, $public_key ) ) );
 			}
 		}
@@ -181,7 +183,7 @@ class Pods_Deploy_UI {
 				),
 
 		);
-
+/*
 		$pod_names = $this->pod_names();
 
 		if ( is_array( $pod_names ) ) {
@@ -192,7 +194,7 @@ class Pods_Deploy_UI {
 				);
 			}
 		}
-
+*/
 		$active_components = $this->active_components();
 
 		if ( is_array( $active_components ) ) {
@@ -216,27 +218,36 @@ class Pods_Deploy_UI {
 	 * @return bool|string
 	 */
 	function include_view() {
-		$keys = Pods_Deploy_Auth::get_keys( true );
-		$public_remote = pods_v_sanitized( 'public', $keys, '' );
+		$keys           = Pods_Deploy_Auth::get_keys( true );
+		$public_remote  = pods_v_sanitized( 'public', $keys, '' );
 		$private_remote = pods_v_sanitized( 'private', $keys, '' );
-		$deploy_active = Pods_Deploy_Auth::deploy_active();
+		$deploy_active  = Pods_Deploy_Auth::deploy_active();
+		wp_enqueue_style( 'pods-wizard' );
 		if ( $deploy_active ) {
 			$key_gen_submit = __( 'Disable Deployments', 'pods-deploy' );
 			$key_gen_header = __( 'Click to revoke keys and prevent deployments to this site.', 'pods-deploy' );
 
-		}
-		else{
+		} else {
 			$key_gen_submit = __( 'Allow Deployments', 'pods-deploy' );
 			$key_gen_header = __( 'Click to generate new keys and allow deployments to this site', 'pods-deploy' );
 		}
 		$form_fields = $this->form_fields();
 
-		$data = compact( array( 'keys', 'public_local', 'private_local', 'public_remote', 'private_remote', 'deploy_active', 'key_gen_submit', 'key_gen_header', 'form_fields' ) );
+		$data = compact( array(
+				'keys',
+				'public_local',
+				'private_local',
+				'public_remote',
+				'private_remote',
+				'deploy_active',
+				'key_gen_submit',
+				'key_gen_header',
+				'form_fields'
+			) );
 
 
 		return pods_view( PODS_DEPLOY_DIR . 'ui/main.php', $data );
 
 	}
-
 
 } 

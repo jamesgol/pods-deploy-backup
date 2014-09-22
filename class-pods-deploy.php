@@ -9,11 +9,12 @@ class Pods_Deploy {
 		$public_key = pods_v( 'public_key', $deploy_params );
 		$private_key = pods_v( 'private_key', $deploy_params );
 		$timeout = pods_v( 'timeout', $deploy_params, 60 );
-		
-		if ( is_null( $pod_names = pods_v( 'pods', $deploy_params ) ) ) {
+		$pods = pods_v( 'pods', $deploy_params );
+
+/*		if ( is_null( $pod_names = pods_v( 'pods', $deploy_params ) ) ) {
 			$pod_names = $GLOBALS[ 'Pods_Deploy_UI' ]->pod_names();
 		}
-
+*/
 		if ( ! $remote_url ||  ! $public_key || ! $private_key ) {
 			echo self::output_message( __( 'Invalid parameters:( You shall not pass! ', 'pods-deploy' ) );
 
@@ -40,11 +41,11 @@ class Pods_Deploy {
 		);
 
 		// Proof of concept: Deal with one pod at a time, need to take list from params/UI
-		$api = pods_api();
-		$pods = $api->load_pods();
+//		$api = pods_api();
+//		$pods = $api->load_pods();
 
-		foreach ( $pods as $pod ) {
-			$single = array( 'pods' => array( $pod[ 'id' ] ));
+		foreach ( $pods as $pod => $v ) {
+			$single = array( 'pods' => array( $pod ));
 			self::do_deploy( $single, $deploy_params );
 		}
 
